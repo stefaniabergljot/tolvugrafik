@@ -8,12 +8,19 @@ var points;
 var colorLoc;
 var tri_width = 0.1;
 var tri_height = 0.1;
-var car_width = 0.1;
-var car_height = 0.1;
+var car_width = 0.2;
+var car_height = 0.2;
 var increment = 0.05;
 var orientation = 0;
-var maxCars = 3;
+var maxCars = 4;
 var cars = [];
+
+var bottomCarLine = -0.45;
+var bottomLine = -0.5
+var topLine = 0.5;
+var noLanes = 3;
+var lineIncrement = (topLine-bottomLine)/noLanes;
+var laneRules = []
 
 window.onload = function init()
 {
@@ -21,24 +28,22 @@ window.onload = function init()
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
-
-    var noLanes = 3;
     
     points=[]
     var carArray = [];
     var frogLocation = vec2(0,-0.65);
     
-    var bottomLine = -0.5;
-    var topLine = 0.5;
+    // predefined lane rules
+    laneRules = [vec2(0.03, 1), vec2(0.01, -1), vec2(0.02, 1)];
     
     drawSquare(vec2(-1, -1), 2, 2);
     drawSquare(vec2(-1, bottomLine), 2, topLine-bottomLine);
     drawFrog(frogLocation);
     
     // Each car has a coordinate, speed and direction (optional: color)
-    cars = [vec4(-1, 0, 0.03, 1),
-                vec4(-1, topLine/2, 0.01, 1),
-                vec4(-1, bottomLine/2, 0.02, 1)
+    cars = [vec4(-1, bottomCarLine+lineIncrement, 0.03, -1),
+                vec4(1, bottomCarLine+2*lineIncrement, 0.01, -0),
+                vec4(-1, bottomCarLine, 0.02, 1)
     ];
     
     var score = 0;
@@ -133,8 +138,10 @@ function refreshCarLocations() {
 
 function spawnCar(cars) {
     // var line = Math.floor(Math.random()*3);
-    var line = 0;
-    cars.push(vec4(-1, 0, 0.01, 1));
+    var lane = Math.floor(Math.random()*noLanes)
+    var line = bottomCarLine + lane*lineIncrement;
+    
+    cars.push(vec4(-laneRules[lane][1], line, laneRules[lane][0], laneRules[lane][1]));
 }
 
 function drawCars(cars) {
