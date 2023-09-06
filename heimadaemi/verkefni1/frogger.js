@@ -8,18 +8,19 @@ var points;
 var colorLoc;
 var tri_width = 0.1;
 var tri_height = 0.1;
-var car_width = 0.2;
+var car_width = 0.3;
 var car_height = 0.2;
 var increment = 0.05;
 var orientation = 0;
 var maxCars = 5;
 var cars = [];
 
-var bottomCarLine = -0.45;
-var bottomLine = -0.5
-var topLine = 0.5;
-var noLanes = 3;
-var lineIncrement = (topLine-bottomLine)/noLanes;
+var bottomCarLine = -0.575;
+var bottomLine = -0.625
+var topLine = 0.625;
+var noLanes = 5;
+//var lineIncrement = (topLine-bottomLine)/noLanes;
+var lineIncrement = car_height + 0.05;
 var laneRules = []
 var gameOver = 0;
 var frogLocation; 
@@ -36,10 +37,17 @@ window.onload = function init()
    
     points=[]
     var carArray = [];
-    frogLocation = vec2(0,-0.65);
+    frogLocation = vec2(0,-0.7 - tri_height);
+    topLine = bottomCarLine + noLanes * lineIncrement;
+
     
     // predefined lane rules
-    laneRules = [vec2(0.03/3, 1), vec2(0.01/3, -1), vec2(0.02/3, 1)];
+    laneRules = [   vec2(0.03/3, 1), 
+                    vec2(0.01/3, -1), 
+                    vec2(0.02/3, 1),
+                    vec2(0.05/3, -1),
+                    vec2(0.03/3, 1)
+                    ];
     
     drawSquare(vec2(-1, -1), 2, 2);
     drawSquare(vec2(-1, bottomLine), 2, topLine-bottomLine);
