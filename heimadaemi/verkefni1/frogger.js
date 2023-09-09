@@ -3,30 +3,45 @@
 //
 /////////////////////////////////////////////////////////////////
 var gl;
-var points;
+var points = [];
 
 var colorLoc;
-var tri_width = 0.1;
-var tri_height = 0.1;
-var car_width = 0.3;
-var car_height = 0.2;
-var increment = 0.05;
-var orientation = 0;
-var maxCars = 5;
-var cars = [];
 
-var bottomCarLine = -0.575;
-var bottomLine = -0.625
-var topLine = 0.625;
-var noLanes = 5;
-//var lineIncrement = (topLine-bottomLine)/noLanes;
-var lineIncrement = car_height + 0.05;
-var laneRules = []
-var gameOver = 0;
-var frogLocation; 
+// Game logic constants
+const frogSpeed = 0.05;
+const maxCars = 5;
+const maxScore = 10;
+
+const frog_width = 0.1;
+const frog_height = 0.1;
+const car_width = 0.3;
+const car_height = 0.2;
+
+// Game logic variables
+var orientation = 0;
+var cars = [];
 var score = 0;
-var scoreboardElement;
+var gameOver = 0;
+var frogLocation = vec2(0,-0.7 - frog_height);
 var carColors = [];
+
+const noLanes = 5;
+const lowestCarTrack = -0.575;
+const lineIncrement = car_height + 0.05;
+const roadBoundaryLow = -0.625
+const roadBoundaryHigh = lowestCarTrack + noLanes * lineIncrement;;
+var laneSpeeds = [   0.03/3,
+                    -0.01/3,
+                    0.02/3,
+                    -0.05/3,
+                    0.03/3
+                    ];   
+var scoreboardElement;
+
+const gray = vec4(0.5, 0.5, 0.5, 1.0);
+const black = vec4(0.1, 0.1, 0.1, 1.0);
+const green = vec4(0.4, 0.7, 0.4, 1.0);
+const yellow = vec4(0.85, 0.85, 0.1, 1.0)
 
 window.onload = function init()
 {
@@ -34,34 +49,6 @@ window.onload = function init()
     
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
-   
-    points=[]
-    var carArray = [];
-    frogLocation = vec2(0,-0.7 - tri_height);
-    topLine = bottomCarLine + noLanes * lineIncrement;
-
-    
-    // predefined lane rules
-    laneRules = [   vec2(0.03/3, 1), 
-                    vec2(0.01/3, -1), 
-                    vec2(0.02/3, 1),
-                    vec2(0.05/3, -1),
-                    vec2(0.03/3, 1)
-                    ];
-    
-    drawSquare(vec2(-1, -1), 2, 2);
-    drawSquare(vec2(-1, bottomLine), 2, topLine-bottomLine);
-    drawFrog(frogLocation);
-    
-    // Each car has a coordinate, speed and direction (optional: color)
-    /*cars = [vec4(-1, bottomCarLine+lineIncrement, 0.03, -1),
-                vec4(1, bottomCarLine+2*lineIncrement, 0.01, 1),
-                vec4(-1, bottomCarLine, 0.02, 1)
-    ];
-    carColors = [randomColor(), randomColor(), randomColor()];*/
-    
-    scoreboardElement = document.getElementById("scoreboard");
-    scoreboardElement.innerHTML = "Score: " + score;
 
     //
     //  Configure WebGL
@@ -73,6 +60,13 @@ window.onload = function init()
     
     var program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
+           
+    // Drawing the background area
+    drawSquare(vec2(-1, -1), 2, 2);
+    drawSquare(vec2(-1, roadBoundaryLow), 2, roadBoundaryHigh-roadBoundaryLow);
+    // Get the scoreboard element for displaying the score
+    scoreboardElement = document.getElementById("scoreboard");
+    scoreboardElement.innerHTML = "Score: " + score;
     
     // Load the data into the GPU
     
@@ -88,95 +82,136 @@ window.onload = function init()
 
     // Find the location of the variable fColor in the shader program
     colorLoc = gl.getUniformLocation( program, "fColor" );
-    function endGame() {
-        document.getElementById("scoreboard").innerHTML = "Game over! Final score: " + score;
-    }
+    
+    // Controls for the frog
+    // For every keystroke, update the frog's location
+    // When it crosses the road boundary, increment score and check for win condition. 
+    // At the end, check for collisions with cars. 
     window.addEventListener("keydown", function(event) {
         if (gameOver === 0) {
             if (event.code === "ArrowUp") {
-                frogLocation[1] += increment;
-                if (frogLocation[1] > 1 - tri_height) {
-                    frogLocation[1] = 1 - tri_height;
+                frogLocation[1] += frogSpeed;
+                if (frogLocation[1] > 1 - frog_height) {
+                    frogLocation[1] = 1 - frog_height;
                 }
-                if (frogLocation[1] > topLine && orientation === 0) {
+                if (frogLocation[1] > roadBoundaryHigh && orientation === 0) {
                     orientation = 1;
                     score++;
                     document.getElementById("scoreboard").innerHTML = "Score: " + score;
+                    if (score >= maxScore) {
+                        endGame();
+
+                    }
                 }        
             } else if (event.code === "ArrowDown") {
-                frogLocation[1] -= increment;
+                frogLocation[1] -= frogSpeed;
                 if (frogLocation[1] < -1) {
                     frogLocation[1] = -1;
                 }
-                if (frogLocation[1] < bottomLine && orientation === 1) {
+                if (frogLocation[1]+frog_height < roadBoundaryLow && orientation === 1) {
                     orientation = 0;
                     score++;
                     document.getElementById("scoreboard").innerHTML = "Score: " + score;
+                    if (score >= maxScore) {
+                        endGame();
+                    }
+
                 }
             } else if (event.code === "ArrowRight") {
-                frogLocation[0] += increment;
-                if (frogLocation[0] > 1 - tri_width) {
-                    frogLocation[0] = 1 - tri_width;
+                frogLocation[0] += frogSpeed;
+                if (frogLocation[0] > 1 - frog_width) {
+                    frogLocation[0] = 1 - frog_width;
                 }
                 
             } else if (event.code === "ArrowLeft") {
-                frogLocation[0] -= increment;
+                frogLocation[0] -= frogSpeed;
                 if (frogLocation[0] < -1) {
                     frogLocation[0] = -1;
                 }   
             }
         }
-        checkForCollision(cars, frogLocation);
+        checkForCollision();
         return;
     })
     runGame();
-    
-    /*window.setInterval(function() {
-        points.length = 12;
-        refreshCarLocations();
-        drawFrog(frogLocation);
-        drawCars(cars);
-        checkForCollision(cars, frogLocation);
-        gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
-        render()
-    }, 50);*/
 };
 
-function checkForCollision(cars, frogLocation, scoreboardElement) {
-    /*collidingCars = cars.filter(
-        car => ((car[1] < frogLocation[1] && frogLocation[1] < car[1]+car_height)
-            || (car[1] < frogLocation[1]+tri_height && frogLocation[1]+tri_height < car[1]+car_height))
-            && ((car[0] < frogLocation[0] && frogLocation[0] < car[0]+car_width) 
-            || (car[0] < frogLocation[0]+tri_width && frogLocation[0]+tri_width < car[0]+car_width))
-    );
-    if (collidingCars.length > 0) {
-        gameOver = 1;
+function runGame() {
+    // Reset everything except the background
+    points.length = 8;
+    refreshCarLocations();
+    drawFrog();
+    drawScore();
+    drawCars();
+    checkForCollision();
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+    render();
+    window.requestAnimFrame(runGame);    
+}
+
+function render() {
+    gl.clear( gl.COLOR_BUFFER_BIT );
+
+    // Background
+    gl.uniform4fv( colorLoc, gray);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // Road
+    gl.uniform4fv( colorLoc, black);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 4, 4);
+    // Frog
+    gl.uniform4fv( colorLoc, green );
+    gl.drawArrays(gl.TRIANGLE_STRIP, 8, 3);
+    // Score
+    gl.uniform4fv( colorLoc, yellow );
+    gl.drawArrays(gl.LINES, 11, score*2);
+    // Cars
+    var carIndex = 11+2*score;
+    for (var i = 0; i < cars.length; ++i) {
+        gl.uniform4fv( colorLoc, carColors[i]);
+        gl.drawArrays(gl.TRIANGLE_STRIP, carIndex + 4*i, 4);
+    }
+}
+
+function endGame() {
+    gameOver = 1;
+    if (score >= maxScore) {
+        scoreboard.innerHTML = "You won! Well done. Final score: " + score;
+    } else {
         scoreboard.innerHTML = "Game over! Final score: " + score;
-    }*/
+    }
+    
+}
+
+/*
+checkForCollision checks if the frog's location overlaps with any cars. 
+If so, it ends the game. 
+*/
+function checkForCollision() {
     for (var i = 0; i < cars.length; ++i) {
         var car = cars[i];
         if (((car[1] < frogLocation[1] && frogLocation[1] < car[1]+car_height)
-                || (car[1] < frogLocation[1]+tri_height && frogLocation[1]+tri_height < car[1]+car_height))
+                || (car[1] < frogLocation[1]+frog_height && frogLocation[1]+frog_height < car[1]+car_height))
                 && ((car[0] < frogLocation[0] && frogLocation[0] < car[0]+car_width) 
-                || (car[0] < frogLocation[0]+tri_width && frogLocation[0]+tri_width < car[0]+car_width))) {
+                || (car[0] < frogLocation[0]+frog_width && frogLocation[0]+frog_width < car[0]+car_width))) {
             // Collision detected!
-            gameOver = 1;
-            scoreboard.innerHTML = "Game over! Final score: " + score;
+            endGame();
             return;
         }
     }
 }
 
+/*
+refreshCarLocations moves every car's x coordinate one step in the car's direction. 
+Then, it iterates over the cars and deletes all that have moved off the grid. 
+Finally, if the number of remaining cars is less than the car max, it has a chance of 
+spawning a new car. 
+*/
 function refreshCarLocations() {
     if (gameOver === 0) {
         for (var i = 0; i < cars.length; ++i) {
             var car = cars[i];
-            car[0] += car[3]*car[2];
+            car[0] += car[2];
         }
-        /*var liveCars = cars.filter(
-            car => car[0] <= 1 && car[0] + car_width >= -1
-        );
-        cars = liveCars;*/
         var i = 0;
         while (true) {
             if (i >= cars.length) {
@@ -194,26 +229,27 @@ function refreshCarLocations() {
         }
         if (cars.length < maxCars) {
             if (Math.random() < 0.05) {
-                spawnCar(cars);
+                attemptSpawnCar();
             }
         }
     }
 } 
 
-function spawnCar(cars) {
-    // var line = Math.floor(Math.random()*3);
+function attemptSpawnCar() {
     var lane = Math.floor(Math.random()*noLanes)
-    var line = bottomCarLine + lane*lineIncrement;
+    var line = lowestCarTrack + lane*lineIncrement;
     
-    var startingPoint = -laneRules[lane][1];
+    var startingPoint = -laneSpeeds[lane]/Math.abs(laneSpeeds[lane]);
     if (startingPoint === -1) {
         startingPoint -= car_width;
     }
     
+    // Iterate over all the cars and check if the new car would overlap with them
+    // If so, give up - the function will be called again in the next cycle
     for (var i = 0; i < cars.length; ++i) {
         var car = cars[i];
         if (car[1] === line) {
-            if (laneRules[lane][1] === 1) {
+            if (laneSpeeds[lane] > 0) {
                 // cars are travelling right
                 if (car[0] - car_width < startingPoint) {
                     return;
@@ -227,25 +263,28 @@ function spawnCar(cars) {
         }
     }
     
-    //cars.push(vec4(-laneRules[lane][1], line, laneRules[lane][0], laneRules[lane][1]));
-    cars.push(vec4(startingPoint, line, laneRules[lane][0], laneRules[lane][1]));
+    cars.push(vec3(startingPoint, line, laneSpeeds[lane]));
     carColors.push(randomColor());
 }
 
-function drawCars(cars) {
+function drawCars() {
     for (var i = 0; i < cars.length; ++i) {
         var car = cars[i];
         drawSquare(vec2(car[0], car[1]), car_width, car_height);
     }
 }
 
+function squareAsTriangleStrip(a, b, c, d) {
+    points.push(a, b, c, d);
+}
+
 function drawSquare(coord, width, height) {
-    squareAsTwoTriangles(
+    squareAsTriangleStrip(
         coord, 
         vec2(coord[0]+width, coord[1]),
+        vec2(coord[0], coord[1]+height),
         vec2(coord[0]+width, coord[1]+height),
-        vec2(coord[0], coord[1]+height)
-        );
+    );
 }
 
 function triangle( a, b, c )
@@ -253,71 +292,40 @@ function triangle( a, b, c )
     points.push( a, b, c );
 }
 
+function line(a, b) {
+    points.push(a, b)
+}
+
+// Unused
 function squareAsTwoTriangles(a, b, c, d) {
     points.push( a, b, c );
     points.push( c, d, a );
 }
 
-function drawFrog(coord){
+function drawFrog(){
+    var coord = frogLocation;
     if (orientation === 0) {
         triangle(coord,
-            vec2(coord[0]+tri_width, coord[1]),
-            vec2(coord[0]+0.5*tri_width, coord[1]+tri_height));
+            vec2(coord[0]+frog_width, coord[1]),
+            vec2(coord[0]+0.5*frog_width, coord[1]+frog_height));
     } else {
         triangle(
-            vec2(coord[0], coord[1]+tri_height),
-            vec2(coord[0]+tri_width, coord[1]+tri_height),
-            vec2(coord[0]+0.5*tri_width, coord[1]));
+            vec2(coord[0], coord[1]+frog_height),
+            vec2(coord[0]+frog_width, coord[1]+frog_height),
+            vec2(coord[0]+0.5*frog_width, coord[1]));
     }
 }
 
-function runGame() {
-    points.length = 12;
-    refreshCarLocations();
-    drawFrog(frogLocation);
-    drawCars(cars);
-    checkForCollision(cars, frogLocation);
-    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
-    render();
-    window.requestAnimFrame(runGame);    
+function drawScore() {
+    var x = -0.95;
+    var y = 0.95;
+    for (var i = 0; i < score; ++i) {
+        line(vec2(x+i*0.035,y), vec2(x+i*0.035,y-0.07));
+    }
 }
 
 function randomColor() {
-    return vec4(Math.random(), Math.random(), Math.random(), 1.0);
-}
-
-function render() {
-    gl.clear( gl.COLOR_BUFFER_BIT );
-
-    gl.uniform4fv( colorLoc, vec4(Math.random(), Math.random(), Math.random(), 1.0) );
-
-    var gray = vec4(0.5, 0.5, 0.5, 1.0);
-    var black = vec4(0.1, 0.1, 0.1, 1.0);
-    var green = vec4(0.4, 0.7, 0.4, 1.0);
-    
-    // Background
-    gl.uniform4fv( colorLoc, gray);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    // Road
-    gl.uniform4fv( colorLoc, black);
-    gl.drawArrays(gl.TRIANGLES, 6, 12);
-    // Frog
-    gl.uniform4fv( colorLoc, green );
-    gl.drawArrays(gl.TRIANGLES, 12, 15);
-    // Cars
-    /*for (var i = 15; i + 6 < points.length; i += 6) {
-        gl.uniform4fv( colorLoc, carColors[(i - 15)/6]);
-        gl.drawArrays(gl.TRIANGLES, i, i+6);
-    }*/
-    for (var i = 0; i < (points.length-15 - 5)/6;++i) {
-        gl.uniform4fv( colorLoc, carColors[i]);
-        gl.drawArrays(gl.TRIANGLES, 15 + 6*i, 6);
-    }
-    //gl.drawArrays(gl.TRIANGLES, 15, points.length-15);
-    
-	/*for (var i =0; i*3<points.length; ++i) {
-        gl.uniform4fv( colorLoc, vec4(Math.random(), Math.random(), Math.random(), 1.0) );
-        gl.drawArrays(gl.TRIANGLES, i*3, 3)
-    }*/
-
+    // Avoid dark colors for contrast
+    var color = vec4(Math.random(), Math.random(), Math.random(), 1.0);
+    return mix(color, vec4(1.0, 1.0, 1.0, 1.0), 0.15);
 }
