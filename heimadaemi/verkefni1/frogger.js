@@ -10,7 +10,7 @@ var colorLoc;
 
 // Game logic constants
 const frogSpeed = 0.05;
-const maxCars = 7;
+const maxCars = 6;
 const maxScore = 10;
 
 const frog_width = 0.1;
