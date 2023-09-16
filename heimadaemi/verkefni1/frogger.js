@@ -10,7 +10,7 @@ var colorLoc;
 
 // Game logic constants
 const frogSpeed = 0.05;
-const maxCars = 5;
+const maxCars = 7;
 const maxScore = 10;
 
 const frog_width = 0.1;
@@ -234,10 +234,27 @@ function refreshCarLocations() {
             }
         }
     }
-} 
+}
+
 
 function attemptSpawnCar() {
-    var lane = Math.floor(Math.random()*noLanes)
+    var emptyLanes = [];
+    for (var lane = 0; lane < noLanes; ++lane) {
+        var lineYCoordinate = lowestCarTrack + lane*lineIncrement;
+        if (isLineEmpty(lineYCoordinate)) {
+            emptyLanes.push(lane);
+        }
+    }
+    var lane;
+    if (emptyLanes.length > 0) {
+        // Pick random empty lane
+        lane = emptyLanes[Math.floor(Math.random()*emptyLanes.length)];
+    } else {
+        // Pick random lane, since all are non-empty
+        lane = Math.floor(Math.random()*noLanes);
+    }
+    
+    // var lane = Math.floor(Math.random()*noLanes);
     var line = lowestCarTrack + lane*lineIncrement;
     
     var startingPoint = -laneSpeeds[lane]/Math.abs(laneSpeeds[lane]);
@@ -247,18 +264,22 @@ function attemptSpawnCar() {
     
     // Iterate over all the cars and check if the new car would overlap with them
     // If so, give up - the function will be called again in the next cycle
-    for (var i = 0; i < cars.length; ++i) {
-        var car = cars[i];
-        if (car[1] === line) {
-            if (laneSpeeds[lane] > 0) {
-                // cars are travelling right
-                if (car[0] - car_width < startingPoint) {
-                    return;
-                }
-            } else {
-                // cars are travelling left
-                if (car[0] + car_width > 1) {
-                    return;
+    // Only necessary when spawning on a non-empty lane
+    var spacing = 0.05;
+    if (emptyLanes.length == 0) {
+        for (var i = 0; i < cars.length; ++i) {
+            var car = cars[i];
+            if (car[1] === line) {
+                if (laneSpeeds[lane] > 0) {
+                    // cars are travelling right
+                    if (car[0] - car_width < (startingPoint + spacing)) {
+                        return;
+                    }
+                } else {
+                    // cars are travelling left
+                    if (car[0] + car_width > (1 - spacing)) {
+                        return;
+                    }
                 }
             }
         }
@@ -266,6 +287,15 @@ function attemptSpawnCar() {
     
     cars.push(vec3(startingPoint, line, laneSpeeds[lane]));
     carColors.push(randomColor());
+}
+
+function isLineEmpty(yCoord) {
+    for (var i = 0; i < cars.length; ++i) {
+        if (cars[i][1] == yCoord) {
+            return false;
+        }       
+    }
+    return true;
 }
 
 function drawCars() {
