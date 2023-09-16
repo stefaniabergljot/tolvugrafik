@@ -37,7 +37,7 @@ var laneSpeeds = [   0.03/3,
                     -0.05/3,
                     0.03/3
                     ];   
-var scoreboardElement;
+var scoreboard;
 
 const gray = vec4(0.5, 0.5, 0.5, 1.0);
 const black = vec4(0.1, 0.1, 0.1, 1.0);
@@ -66,8 +66,8 @@ window.onload = function init()
     drawSquare(vec2(-1, -1), 2, 2);
     drawSquare(vec2(-1, roadBoundaryLow), 2, roadBoundaryHigh-roadBoundaryLow);
     // Get the scoreboard element for displaying the score
-    scoreboardElement = document.getElementById("scoreboard");
-    scoreboardElement.innerHTML = "Score: " + score;
+    scoreboard = document.getElementById("scoreboard");
+    scoreboard.innerHTML = "Score: " + score;
     
     // Load the data into the GPU
     
@@ -98,7 +98,7 @@ window.onload = function init()
                 if (frogLocation[1] > roadBoundaryHigh && orientation === 0) {
                     orientation = 1;
                     score++;
-                    document.getElementById("scoreboard").innerHTML = "Score: " + score;
+                    scoreboard.innerHTML = "Score: " + score;
                     if (score >= maxScore) {
                         endGame();
 
@@ -112,7 +112,7 @@ window.onload = function init()
                 if (frogLocation[1]+frog_height < roadBoundaryLow && orientation === 1) {
                     orientation = 0;
                     score++;
-                    document.getElementById("scoreboard").innerHTML = "Score: " + score;
+                    scoreboard.innerHTML = "Score: " + score;
                     if (score >= maxScore) {
                         endGame();
                     }
@@ -161,7 +161,7 @@ function render() {
     gl.drawArrays(gl.TRIANGLE_STRIP, 4, 4);
     // Frog
     gl.uniform4fv( colorLoc, green );
-    gl.drawArrays(gl.TRIANGLE_STRIP, 8, 3);
+    gl.drawArrays(gl.TRIANGLES, 8, 3);
     // Score
     gl.uniform4fv( colorLoc, yellow );
     gl.drawArrays(gl.LINES, 11, score*2);
