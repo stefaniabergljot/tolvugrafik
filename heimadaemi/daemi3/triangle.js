@@ -1,11 +1,13 @@
-//////////////////////////////////////////////////////////////////////
-//    Sýnidæmi fyrir heimadæmi 1 í Tölvugrafík
-//     Rétthyrningur teiknaður með tveimur sjálfstæðum þríhyrningum
+///////////////////////////////////////////////////////////////////
+//    Heimadæmi 3-1
+//    Byggt á triangle.js
 //
-//    Hjálmtýr Hafsteinsson, ágúst 2023
-//////////////////////////////////////////////////////////////////////
+//    Stefanía Bergljót Stefánsdóttir, september 2023
+///////////////////////////////////////////////////////////////////
 var gl;
 var points;
+var locTime;
+var iniTime;
 
 window.onload = function init()
 {
@@ -14,15 +16,12 @@ window.onload = function init()
     gl = WebGLUtils.setupWebGL( canvas );
     if ( !gl ) { alert( "WebGL isn't available" ); }
 
-    //var vertices = new Float32Array([-0.5, -0.25, -0.5, 0.25, 0.5, -0.25,
-	//								 0.5, 0.25]);
-    var vertices = new Float32Array([-0.5, 0.25, -0.5, -0.25, 0.5, -0.25,
-0.5, 0.25]);
+    var vertices = new Float32Array([-1, -1, 0, 1, 1, -1]);
 
     //  Configure WebGL
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.95, 1.0, 1.0, 1.0 );
     
     //  Load shaders and initialize attribute buffers
     
@@ -33,13 +32,16 @@ window.onload = function init()
     
     var bufferId = gl.createBuffer();
     gl.bindBuffer( gl.ARRAY_BUFFER, bufferId );
-    gl.bufferData( gl.ARRAY_BUFFER,vertices, gl.STATIC_DRAW );
+    gl.bufferData( gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW );
 
-    // Associate out shader variables with our data buffer
-    
+    // Associate shader variables with our data buffer
     var vPosition = gl.getAttribLocation( program, "vPosition" );
     gl.vertexAttribPointer( vPosition, 2, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vPosition );
+    
+    locTime = gl.getUniformLocation( program, "time" );
+    iniTime = Date.now();
+
 
     render();
 };
@@ -47,6 +49,11 @@ window.onload = function init()
 
 function render() {
     gl.clear( gl.COLOR_BUFFER_BIT );
-    //gl.drawArrays( gl.TRIANGLE_STRIP, 0, 6 );
-    gl.drawArrays( gl.TRIANGLE_FAN, 0, 6 );
+    
+    var msek = Date.now() - iniTime;
+    gl.uniform1f( locTime, msek );
+    
+    gl.drawArrays( gl.TRIANGLES, 0, 3 );
+    
+    window.requestAnimFrame(render);
 }
