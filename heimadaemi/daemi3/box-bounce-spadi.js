@@ -111,7 +111,7 @@ function render() {
     if (Math.abs(box[1] + dY) > maxY - boxRad) dY = -dY;
     
     // Láta ferninginn skoppa af sleðanum
-    if (box[1] - boxRad >= slideHeight && box[1]+dY - boxRad < slideHeight) {
+    if (box[1]+dY - boxRad < slideHeight) {
         if (box[0]+boxRad + dX > slideLeft && box[0]-boxRad + dX < slideRight) {
             // We have a collision
             dX = -dX;
