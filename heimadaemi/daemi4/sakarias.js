@@ -121,7 +121,7 @@ function quad(a, b, c, d)
 
     for ( var i = 0; i < indices.length; ++i ) {
         points.push( vertices[indices[i]] );
-        colors.push([0.2, 0.2, 0.2, 1.0]);
+        colors.push(vertexColors[a]);
         
     }
 }
