@@ -70,16 +70,27 @@ window.onload = function init()
     
     fBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, fBuffer);
+    // This is the fish model
     gl.bufferData(gl.ARRAY_BUFFER, flatten([
+        // Body 
         vec3(0,0,0),
         vec3(-0.2, 0.1, 0.0),
         vec3(-0.2, -0.1, 0.0),
         vec3(-0.2, 0.1, 0.0),
         vec3(-0.2, -0.1, 0.0),
         vec3(-0.5, 0, 0),
+        // Tail
         vec3(-0.5, 0, 0),
         vec3(-0.6, 0.1, 0),
         vec3(-0.6, -0.1, 0),
+        // Fins
+        vec3(-0.2, 0.0, 0.0),
+        vec3(-0.3, 0.05, 0.1),
+        vec3(-0.3, -0.05, 0.1),
+        vec3(-0.2, 0.0, 0.0),
+        vec3(-0.3, 0.05, -0.1),
+        vec3(-0.3, -0.05, -0.1)
+        
 
     ]), gl.STATIC_DRAW);
 
@@ -152,7 +163,23 @@ function line(a, b) {
     
 }
 
-var fishLocation = vec3(0.3, 0.3, 0.3);
+var fishLoc = [
+    vec3(0.3, 0.3, 0.3),
+    vec3(0.1, 0.1, 0.1),
+    vec3(-0.3, 0.4, 0.7),
+];
+
+var fishVec = [
+    vec3(0.001, 0.001, 0.001),
+    vec3(0.001, 0.0, 0.0),
+    vec3(-0.001, 0.0, 0.001),
+];
+
+var fishCol = [
+    vec4(0.2, 0.8, 1.0, 1.0),
+    vec4(0.2, 0.6, 0.9, 1.0),
+    vec4(0.3, 0.7, 0.9, 1.0),
+];
 
 function render()
 {
@@ -165,6 +192,29 @@ function render()
     rotTail += incTail;
     if( rotTail > 35.0  || rotTail < -35.0 )
         incTail *= -1;
+    for (var i = 0; i < fishLoc.length; i++) {
+        fishLoc[i][0] += fishVec[i][0];
+        fishLoc[i][1] += fishVec[i][1];
+        fishLoc[i][2] += fishVec[i][2];
+        
+        for (var j = 0; j < 3; j++) {
+            fishLoc[i][j] += fishVec[i][j];
+            // TODO improve so that the fish emerges from the 'opposite' side
+            if (fishLoc[i][j] > 1) {
+                fishLoc[i][j] = -1
+            } else if (fishLoc[i][j] < -1) {
+                fishLoc[i][j] = 1;
+            }
+        }
+        
+        /*if (Math.max(
+            Math.abs(fishLoc[i][0]), Math.abs(fishLoc[i][1]), Math.abs(fishLoc[i][2]) 
+        ) > 1 ) {
+            fishLoc[i][0] *= -1;
+            fishLoc[i][0] *= -1;
+            fishLoc[i][0] *= -1;
+        }*/
+    }
     
     gl.uniformMatrix4fv(matrixLoc, false, flatten(mv));
 
@@ -174,19 +224,37 @@ function render()
 
     gl.drawArrays( gl.LINES, 0, NumVertices );
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, fBuffer);
-    gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
-    gl.uniform4fv(locColor, flatten(vec4(0.2, 0.8, 1.0, 1.0)));
+    // Fish start here
+    for (var i = 0; i < fishLoc.length; i++) {
+        var fishMv = mult( mv, translate(fishLoc[i][0], fishLoc[i][1], fishLoc[i][2]));
+        
+        gl.uniformMatrix4fv(matrixLoc, false, flatten(fishMv));
 
-    gl.drawArrays(gl.TRIANGLES, 0, 2*3);
+        gl.bindBuffer(gl.ARRAY_BUFFER, fBuffer);
+        gl.vertexAttribPointer( vPosition, 3, gl.FLOAT, false, 0, 0 );
+        gl.uniform4fv(locColor, flatten(vec4(0.2, 0.8, 1.0, 1.0)));
+
+        gl.drawArrays(gl.TRIANGLES, 0, 2*3);
+        
+        // Finding the transformation matrix for the tail
+        tailMv = mult( fishMv, translate(-0.5, 0, 0));
+        tailMv = mult( tailMv, rotateY( rotTail ) );
+        tailMv = mult( tailMv, translate(0.5, 0, 0));
+        
+        gl.uniformMatrix4fv(matrixLoc, false, flatten(tailMv));
+        
+        gl.drawArrays(gl.TRIANGLES, 2*3, 1*3);
+        
+        // The fins
+        finMv = mult( fishMv, translate(-0.2, 0, 0));
+        finMv = mult( finMv, rotateY( rotTail ) );
+        finMv = mult( finMv, translate(0.2, 0, 0));
+        gl.uniformMatrix4fv(matrixLoc, false, flatten(finMv));
+        
+        gl.drawArrays(gl.TRIANGLES, 3*3, 2*3);
+    }
     
-    mv = mult( mv, translate(-0.5, 0, 0));
-    mv = mult( mv, rotateY( rotTail ) );
-    mv = mult( mv, translate(0.5, 0, 0));
-    
-    gl.uniformMatrix4fv(matrixLoc, false, flatten(mv));
-    
-    gl.drawArrays(gl.TRIANGLES, 2*3, 3*3);
+    //mv = mult( mv, translate(fishLoc[0], fishLoc[1], fishLoc[2]));
 
     requestAnimFrame( render );
 }
