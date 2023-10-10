@@ -73,6 +73,11 @@ var coDistance = 0.7;
 var alDistance = 0.7;
 var sepDistance = 0.3;
 var fishSize = 0.6;
+var sharkAversionDistance = 0.3;
+
+var showDirection = false;
+var rogue = -1;
+var shark = -1;
 
 
 window.onload = function init()
@@ -202,16 +207,79 @@ window.onload = function init()
 	document.getElementById("separationNeighbourhood").onchange = function(event) {
 		sepDistance = parseFloat(event.target.value);
 	};
+	document.getElementById("sharkAversionNeighbourhood").onchange = function(event) {
+		sharkAversionDistance = parseFloat(event.target.value);
+	};
 	document.getElementById("addFish").onclick = function(){
 		fishLoc.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishVec.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishCol.push(vec4(Math.random()*0.3, Math.random()*0.5+0.5, Math.random()*0.3+0.7, 1.0));
 	};
+	document.getElementById("addRogue").onclick = function(){
+		if (rogue < 0) {
+			fishLoc.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
+			fishVec.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
+			fishCol.push(vec4(0.86, 0.37, 0.53, 1.0));
+			rogue = fishLoc.length - 1;
+		}
+	};
+	document.getElementById("removeRogue").onclick = function(){
+		if (rogue > -1 ) {
+			if (shark > rogue) {
+				shark--;
+			}
+			fishLoc.splice(rogue, 1);
+			fishVec.splice(rogue, 1);
+			fishCol.splice(rogue, 1);
+			rogue = -1;	
+		}
+	}
+	document.getElementById("addShark").onclick = function(){
+		if (shark < 0) {
+			fishLoc.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
+			fishVec.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
+			fishCol.push(vec4(0.1, 0.1, 0.2, 1.0));
+			shark = fishLoc.length - 1;
+		}
+	};
+	document.getElementById("removeShark").onclick = function(){
+		if (shark > -1 ) {
+			if (rogue > shark) {
+				rogue--;
+			}
+			fishLoc.splice(rogue, 1);
+			fishVec.splice(shark, 1);
+			fishCol.splice(shark, 1);
+			shark = -1;	
+		}
+	}
+
 	document.getElementById("removeFish").onclick = function(){
+		if (rogue == fishLoc.length - 1) {
+			rogue = -1;
+		}
+		if (shark == fishLoc.length - 1) {
+			shark = -1;
+		}
 		fishLoc.pop();
 		fishVec.pop();
 		fishCol.pop();
+		/*if (fishLoc.length - 1 == rogue) {
+			// protect the rogue fish
+			fishLoc.splice(fishCol.length - 2, 1);
+			fishVec.splice(fishCol.length - 2, 1);
+			fishCol.splice(fishCol.length - 2, 1);
+			rogue -= 1;
+			
+		} else {
+			fishLoc.pop();
+			fishVec.pop();
+			fishCol.pop();
+		}*/
 	};
+	document.getElementById("showDirection").onclick = function() {
+		showDirection = !showDirection;
+	}
 	document.getElementById("fishSize").onchange = function(event) {
 		fishSize = parseFloat(event.target.value);
 	};
@@ -283,7 +351,7 @@ function line(a, b) {
 function getLocalFlockmates(fishId, neighbourhood) {
     var localFlockmates = [];
 	for (var i = 0; i < fishLoc.length; i++) {
-		if (i == fishId) {
+		if (i == fishId || i == shark) {
 			continue;
 		}
 		var dist = subtract(fishLoc[i], fishLoc[fishId]);
@@ -357,29 +425,83 @@ function logicalUpdatesV1() {
     }
 }
 
+function sharkVector(fishId) {
+	return subtract(fishLoc[fishId], fishLoc[shark]);
+}
+
+var counter = 0;
+
 function logicalUpdatesV2() {
 	for (var i = 0; i < fishLoc.length; i++) {
+		var newHeading = vec3(0.0, 0.0, 0.0);
+		var isAvoidingShark = false;
+		if (shark > 0 && shark != i) {
+			sVec = sharkVector(i);
+			sDist = dot(sVec, sVec);
+			if (sDist < sharkAversionDistance) {
+				newHeading = sVec;
+				isAvoidingShark = true;
+			}
+			if (sDist < 0.001) {
+				newHeading = vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+			}
+		}
+		if (i == rogue && isAvoidingShark == false) {
+			var rand = vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+			newHeading = mix(fishVec[i], rand, 0.0005);
+		} else if (i == shark) {
+			if (counter = 2000) {
+				counter = 0;
+				var min = 10000;
+				for (var j = 0; j < fishLoc.length; j++) {
+					if (j != shark) {
+						var current = length(subtract(fishLoc[j], fishLoc[i]));
+						if (current < min) {
+							min = current; 
+							newHeading = subtract(fishLoc[j], fishLoc[i]);
+						}
+						
+					}
+				}
+			} else {
+				counter++;
+				newHeading = fishVec[i];
+			}
+			
+		} else if (isAvoidingShark == false) {
+			var sepVec = getSeparation(i);
+			var coVec = getCohesion(i);
+			var alVec = getAverageLocalHeading(i);
+			var fwVec = vec3(0.1, 0.0, 0.0);
+			newHeading = scale(sStrength, sepVec);
+			newHeading = add(newHeading, scale(cStrength, coVec));
+			newHeading = add(newHeading, scale(aStrength, alVec));
+			newHeading = add(newHeading, scale(fStrength, fwVec));
+			if (Math.random() < 0.05) {
+				newHeading = add(newHeading, scale(rStrength, vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)));
+			}
+			newHeading = add(newHeading, scale(pStrength, fishVec[i]));
+			newHeading = scale(1.0/(aStrength + cStrength + sStrength + pStrength + fStrength + rStrength), newHeading);
+		}
         //fishLoc[i] = add(fishLoc[i],fishVec[i]);
 		//var newHeading = scale(sStrength, getSeparation(i)) + scale(cStrength, getCohesion(i)) + scale(aStrength, getAverageLocalHeading(i));
-		var sepVec = getSeparation(i);
-		var coVec = getCohesion(i);
-		var alVec = getAverageLocalHeading(i);
-		var fwVec = vec3(0.1, 0.0, 0.0);
-		var newHeading = scale(sStrength, sepVec)
-		newHeading = add(newHeading, scale(cStrength, coVec));
-		newHeading = add(newHeading, scale(aStrength, alVec));
-		newHeading = add(newHeading, scale(fStrength, fwVec));
-		if (Math.random() < 0.05)
-			newHeading = add(newHeading, scale(rStrength, vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)));
-		newHeading = add(newHeading, scale(pStrength, fishVec[i]));
-		newHeading = scale(1.0/(aStrength + cStrength + sStrength + pStrength + fStrength + rStrength), newHeading);
-		// max and min velocities
-		var velSquared = dot(newHeading, newHeading);
 		
-		if (velSquared > maxSpeed ** 2) {
-			newHeading = scale(maxSpeed/Math.sqrt(velSquared), newHeading);
-		} else if (velSquared < minSpeed ** 2) {
-			newHeading = scale(minSpeed/Math.sqrt(velSquared), newHeading);
+		// max and min velocities
+		var speed = length(newHeading, newHeading);
+		if (speed == 0) {
+			speed = 0.000001
+		}
+		
+		if (speed > maxSpeed || isAvoidingShark) {
+			//newHeading = scale(maxSpeed/Math.sqrt(velSquared), newHeading);
+			newHeading = scale(maxSpeed, normalize(newHeading));
+		} else if (speed < minSpeed ** 2) {
+			//newHeading = scale(minSpeed/Math.sqrt(velSquared), newHeading);
+			newHeading = scale(minSpeed, normalize(newHeading))
+		}
+		if (i == shark) {
+			//newHeading = scale(1.5*maxSpeed/Math.sqrt(velSquared), newHeading);
+			newHeading = scale(maxSpeed, normalize(newHeading));
 		}
 		
 		fishVec[i] = newHeading;
@@ -452,6 +574,19 @@ function render()
 		// Make fish small 
 		fishMv = mult( fishMv, scalem(fishSize, fishSize, fishSize));
 		// When to change the fish direction?
+		if (showDirection) {
+			//fishMv = mult( fishMv, translate(-fishLoc[i][0], 0, 0));
+			var angle2 = Math.atan(Math.abs(fishVec[i][2])/Math.abs(fishVec[i][0]))*360/(2*Math.PI);
+			
+			if (fishVec[i][0] > 0 && fishVec[i][2] > 0) angle2 *= -1; // 
+			if (fishVec[i][0] > 0 && fishVec[i][2] < 0) angle2 *= 1;
+			if (fishVec[i][0] < 0 && fishVec[i][2] > 0) angle2 -= 180;
+			if (fishVec[i][0] < 0 && fishVec[i][2] < 0) angle2 = 180 - angle2;
+			//if(fishVec[i][0] < 0 && fishVec[i][2] < 0) angle2 += 180;
+			//if(fishVec[i][0] < 0) angle2 = 180 - angle2;
+			fishMv = mult( fishMv, rotate(angle2, [0, 1, 0]));
+			//fishMv = mult( fishMv, translate(fishLoc[i][0], 0, 0))
+		}
 		/*fishMv = mult( fishMv, translate(-fishLoc[i][0], 0, 0));
 		var angle2 = Math.atan(fishVec[i][2]/fishVec[i][0])*360/(2*Math.PI);
 		fishMv = mult( fishMv, rotateY(-angle2));
