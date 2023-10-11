@@ -78,7 +78,9 @@ var sharkAversionDistance = 0.3;
 var showDirection = false;
 var rogue = -1;
 var shark = -1;
+var borderAversion = false;
 
+var angleQueue = [];
 
 window.onload = function init()
 {
@@ -105,6 +107,7 @@ window.onload = function init()
 		fishLoc.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishVec.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishCol.push(vec4(Math.random()*0.3, Math.random()*0.5+0.5, Math.random()*0.3+0.7, 1.0));
+		angleQueue.push([]);
 	}
     
     /*var cBuffer = gl.createBuffer();
@@ -210,10 +213,14 @@ window.onload = function init()
 	document.getElementById("sharkAversionNeighbourhood").onchange = function(event) {
 		sharkAversionDistance = parseFloat(event.target.value);
 	};
+	document.getElementById("borderAversion").onclick = function(event) {
+		borderAversion = !borderAversion;
+	};
 	document.getElementById("addFish").onclick = function(){
 		fishLoc.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishVec.push(vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1));
 		fishCol.push(vec4(Math.random()*0.3, Math.random()*0.5+0.5, Math.random()*0.3+0.7, 1.0));
+		angleQueue.push([]);
 	};
 	document.getElementById("addRogue").onclick = function(){
 		if (rogue < 0) {
@@ -222,6 +229,7 @@ window.onload = function init()
 			fishCol.push(vec4(0.86, 0.37, 0.53, 1.0));
 			rogue = fishLoc.length - 1;
 		}
+		angleQueue.push([]);
 	};
 	document.getElementById("removeRogue").onclick = function(){
 		if (rogue > -1 ) {
@@ -241,6 +249,7 @@ window.onload = function init()
 			fishCol.push(vec4(0.1, 0.1, 0.2, 1.0));
 			shark = fishLoc.length - 1;
 		}
+		angleQueue.push([]);
 	};
 	document.getElementById("removeShark").onclick = function(){
 		if (shark > -1 ) {
@@ -367,15 +376,14 @@ function getAverageLocalHeading(fishId) {
 	var localFlockmates = getLocalFlockmates(fishId, alDistance);
 	if (localFlockmates.length == 0) {
 		// TODO double check this is correct behaviour?
-		//return vec3(0,0,0)
 		return fishVec[fishId];
 	}
 	for (var i = 0; i < localFlockmates.length; i++) {
 		var id = localFlockmates[i];
 		sum = add(sum, fishVec[id]);
 	}
-	var scale = 1.0/localFlockmates.length;
-	return vec3(sum[0]*scale, sum[1]*scale, sum[2]*scale);
+	var f = 1.0/localFlockmates.length;
+	return scale(f, sum);
 }
 
 function getAverageLocalPosition(fishId) {
@@ -401,6 +409,24 @@ function getSeparation(fishId) {
 		// vector away from neighbour
 		var v = subtract(fishLoc[fishId],fishLoc[id]);
 		start = add( start, v );
+	}
+	if (borderAversion) {
+		// find closest border
+		var b = vec3(-1,-1,-1);
+		if (fishLoc[i][0] > 0) b[0] = 1;
+		if (fishLoc[i][1] > 0) b[1] = 1;
+		if (fishLoc[i][2] > 0) b[2] = 1;
+		for (var j = 0; j < 3; j++) {
+			if (1.0 - Math.abs(fishLoc[i][j]) < sepDistance) {
+				//var p = fishLoc[fishId];
+				var p = vec3(0,0,0);
+				p[0] = fishLoc[fishId][0];
+				p[1] = fishLoc[fishId][1];
+				p[2] = fishLoc[fishId][2];
+				p[j] = b[j];
+				start = add (start, scale(10.0, subtract(fishLoc[fishId], p)));
+			}
+		}
 	}
 	return start;
 }
@@ -435,20 +461,23 @@ function logicalUpdatesV2() {
 	for (var i = 0; i < fishLoc.length; i++) {
 		var newHeading = vec3(0.0, 0.0, 0.0);
 		var isAvoidingShark = false;
+		var sharkAvoidanceVector;
 		if (shark > 0 && shark != i) {
 			sVec = sharkVector(i);
 			sDist = dot(sVec, sVec);
 			if (sDist < sharkAversionDistance) {
-				newHeading = sVec;
+				sharkAvoidanceVector = sVec;
 				isAvoidingShark = true;
 			}
-			if (sDist < 0.001) {
-				newHeading = vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+			if (sDist < 0.0000000001) {
+				//sharkAvoidanceVector = vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+				isAvoidingShark = false;
 			}
 		}
-		if (i == rogue && isAvoidingShark == false) {
+		if (i == rogue) {
 			var rand = vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
 			newHeading = mix(fishVec[i], rand, 0.0005);
+			if (isAvoidingShark) newHeading = add(newHeading, scale(1.0, sharkAvoidanceVector));
 		} else if (i == shark) {
 			if (counter = 2000) {
 				counter = 0;
@@ -468,7 +497,7 @@ function logicalUpdatesV2() {
 				newHeading = fishVec[i];
 			}
 			
-		} else if (isAvoidingShark == false) {
+		} else {
 			var sepVec = getSeparation(i);
 			var coVec = getCohesion(i);
 			var alVec = getAverageLocalHeading(i);
@@ -477,6 +506,10 @@ function logicalUpdatesV2() {
 			newHeading = add(newHeading, scale(cStrength, coVec));
 			newHeading = add(newHeading, scale(aStrength, alVec));
 			newHeading = add(newHeading, scale(fStrength, fwVec));
+			if (isAvoidingShark) {
+				newHeading = add(newHeading, scale(10.0, sharkAvoidanceVector));
+			}
+			
 			if (Math.random() < 0.05) {
 				newHeading = add(newHeading, scale(rStrength, vec3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)));
 			}
@@ -572,7 +605,11 @@ function render()
     for (var i = 0; i < fishLoc.length; i++) {
 		var fishMv = mult( mv, translate(fishLoc[i][0], fishLoc[i][1], fishLoc[i][2]));
 		// Make fish small 
-		fishMv = mult( fishMv, scalem(fishSize, fishSize, fishSize));
+		var sz = fishSize;
+		if (i == shark) {
+			sz += 0.1;
+		}
+		fishMv = mult( fishMv, scalem(sz, sz, sz));
 		// When to change the fish direction?
 		if (showDirection) {
 			//fishMv = mult( fishMv, translate(-fishLoc[i][0], 0, 0));
@@ -584,7 +621,12 @@ function render()
 			if (fishVec[i][0] < 0 && fishVec[i][2] < 0) angle2 = 180 - angle2;
 			//if(fishVec[i][0] < 0 && fishVec[i][2] < 0) angle2 += 180;
 			//if(fishVec[i][0] < 0) angle2 = 180 - angle2;
-			fishMv = mult( fishMv, rotate(angle2, [0, 1, 0]));
+			//fishMv = mult( fishMv, rotate(angle2, [0, 1, 0]));
+			angleQueue[i].push(angle2);
+			if (angleQueue[i].length > 100) {
+				angleQueue[i].shift();
+			}
+			fishMv = mult( fishMv, rotate(average(angleQueue[i]), [0, 1, 0]));
 			//fishMv = mult( fishMv, translate(fishLoc[i][0], 0, 0))
 		}
 		/*fishMv = mult( fishMv, translate(-fishLoc[i][0], 0, 0));
@@ -632,3 +674,15 @@ function render()
     requestAnimFrame( render );
 }
 
+function average(arr) {
+	var counter = 0;
+	var sum = 0;
+	for (var i = 0; i < arr.length; i++) {
+		counter += 1;
+		sum += arr[i];
+	};
+	if (counter > 0) {
+		return sum/counter;
+	}
+	return null;
+}
