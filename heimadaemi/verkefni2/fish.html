@@ -2,91 +2,93 @@
 
 <div>
 Cohesion 0.0<input id="cohesionSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.25" />
+ min="0.0" max="1.0" step="0.01" value="0.25" oninput="this.nextElementSibling.value = this.value"/>
  1.0
+ <output>0.25</output>
 </div>
 <div>
 Alignment 0.0<input id="alignmentSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.25" />
+ min="0.0" max="1.0" step="0.01" value="0.35" oninput="this.nextElementSibling.value = this.value"/>
  1.0
+ <output>0.35</output>
 </div>
 <div>
 Separation 0.0<input id="separationSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.25" />
+ min="0.0" max="1.0" step="0.01" value="0.6" oninput="this.nextElementSibling.value = this.value"/>
  1.0
+ <output>0.6</output>
 </div>
 <div>
 Maintain 0.0<input id="maintenanceSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.0" />
+ min="0.0" max="1.0" step="0.01" value="0.0" oninput="this.nextElementSibling.value = this.value"/>
  1.0
+ <output>0.0</output>
 </div>
 <div>
 Forward 0.0<input id="forwardSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.0" />
+ min="0.0" max="1.0" step="0.01" value="0.0" oninput="this.nextElementSibling.value = this.value"/>
  1.0
-</div>
-<div>
-Random 0.0<input id="randomSlider" type="range"
- min="0.0" max="1.0" step="0.01" value="0.0" />
- 1.0
+ <output>0.0</output>
 </div>
 <div>
 Min speed 0.000<input id="minSpeedSlider" type="range"
- min="0.0000" max="0.010" step="0.0001" value="0.0015" />
+ min="0.0000" max="0.010" step="0.0001" value="0.0015" oninput="this.nextElementSibling.value = this.value"/>
  0.010
+ <output>0.0015</output>
 </div>
 <div>
 Max speed 0.001<input id="maxSpeedSlider" type="range"
- min="0.001" max="0.010" step="0.0001" value="0.003" />
+ min="0.001" max="0.010" step="0.0001" value="0.003"oninput="this.nextElementSibling.value = this.value"/>
  0.010
+ <output>0.003</output>
 </div>
 <div>
 Cohesion neighbourhood 0.05<input id="cohesionNeighbourhood" type="range"
- min="0.05" max="3.5" step="0.1" value="0.7" />
+ min="0.05" max="3.5" step="0.1" value="0.7" oninput="this.nextElementSibling.value = this.value"/>
  3.5
+ <output>0.7</output>
 </div>
 <div>
 Alignment neighbourhood 0.05<input id="alignmentNeighbourhood" type="range"
- min="0.05" max="3.5" step="0.1" value="0.7" />
+ min="0.05" max="3.5" step="0.1" value="0.7" oninput="this.nextElementSibling.value = this.value"/>
  3.5
+ <output>0.7</output>
 </div>
 <div>
 Separation neighbourhood 0.05<input id="separationNeighbourhood" type="range"
- min="0.05" max="3.5" step="0.1" value="0.3" />
+ min="0.05" max="3.5" step="0.1" value="0.3" oninput="this.nextElementSibling.value = this.value"/>
  3.5
+ <output>0.3</output>
 </div>
 <div>
 Shark aversion neighbourhood 0.05<input id="sharkAversionNeighbourhood" type="range"
- min="0.05" max="3.5" step="0.1" value="0.3" />
+ min="0.05" max="3.5" step="0.1" value="0.3" oninput="this.nextElementSibling.value = this.value"/>
  3.5
+ <output>0.3</output>
 </div>
 <div>
 Fish size 0.1<input id="fishSize" type="range"
- min="0.1" max="1.0" step="0.05" value="0.6" />
+ min="0.1" max="1.0" step="0.05" value="0.6" oninput="this.nextElementSibling.value = this.value"/>
 1.0
+<output>0.6</output>
 </div>
 <button id="addFish">Add fish</button>
 <button id="removeFish">Remove fish</button>
 <button id="addRogue">Add rogue</button>
 <button id="removeRogue">Remove rogue</button>
 <button id="addShark">Add shark</button>
-<button id="removeShark">Remove shark</button>
 <button id="showDirection">Show direction</button>
-<button id="borderAversion">Border aversion</button>
+<button id="removeShark">Remove shark</button>
 <button id="reset">Reset</button>
 <br/>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 
 attribute vec4 vPosition;
-attribute vec4 vColor;
-varying vec4 fColor;
-
 uniform mat4 rotation;
 
 void main() 
 {
-    fColor = vColor;
     gl_Position = rotation * vPosition;
 } 
 </script>
@@ -95,7 +97,6 @@ void main()
 
 precision mediump float;
    
-varying vec4 fColor;
 uniform vec4 rColor;
 
 void main()
