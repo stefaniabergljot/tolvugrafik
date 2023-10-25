@@ -43,12 +43,34 @@ var mvLoc;
 
 // Hnútar veggsins
 var vertices = [
+// Veggur 1
     vec4( -5.0,  0.0, 0.0, 1.0 ),
     vec4(  5.0,  0.0, 0.0, 1.0 ),
     vec4(  5.0,  1.0, 0.0, 1.0 ),
     vec4(  5.0,  1.0, 0.0, 1.0 ),
     vec4( -5.0,  1.0, 0.0, 1.0 ),
     vec4( -5.0,  0.0, 0.0, 1.0 ),
+// Veggur 2
+    vec4( 5.0,  0.0, 0.0, 1.0 ),
+    vec4(  5.0,  0.0, 10.0, 1.0 ),
+    vec4(  5.0,  1.0, 10.0, 1.0 ),
+    vec4(  5.0,  1.0, 10.0, 1.0 ),
+    vec4( 5.0,  1.0, 0.0, 1.0 ),
+    vec4( 5.0,  0.0, 0.0, 1.0 ),
+// Veggur 3
+    vec4( 5.0,  0.0, 10.0, 1.0 ),
+    vec4( -5.0,  0.0, 10.0, 1.0 ),
+    vec4( -5.0,  1.0, 10.0, 1.0 ),
+    vec4( -5.0,  1.0, 10.0, 1.0 ),
+    vec4( 5.0,  1.0, 10.0, 1.0 ),
+    vec4( 5.0,  0.0, 10.0, 1.0 ),
+// Veggur 4
+    vec4( -5.0,  0.0, 10.0, 1.0 ),
+    vec4( -5.0,  0.0, 0.0, 1.0 ),
+    vec4( -5.0,  1.0, 0.0, 1.0 ),
+    vec4( -5.0,  1.0, 0.0, 1.0 ),
+    vec4( -5.0,  1.0, 10.0, 1.0 ),
+    vec4( -5.0,  0.0, 10.0, 1.0 ),
 // Hnútar gólfsins (strax á eftir)
     vec4( -5.0,  0.0, 10.0, 1.0 ),
     vec4(  5.0,  0.0, 10.0, 1.0 ),
@@ -61,6 +83,25 @@ var vertices = [
 // Mynsturhnit fyrir vegg
 var texCoords = [
     vec2(  0.0, 0.0 ),
+    vec2( 10.0, 0.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2(  0.0, 1.0 ),
+    vec2(  0.0, 0.0 ),
+	// Endurtökum fyrir hvern vegg
+	vec2(  0.0, 0.0 ),
+    vec2( 10.0, 0.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2(  0.0, 1.0 ),
+    vec2(  0.0, 0.0 ),
+	vec2(  0.0, 0.0 ),
+    vec2( 10.0, 0.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2(  0.0, 1.0 ),
+    vec2(  0.0, 0.0 ),
+	vec2(  0.0, 0.0 ),
     vec2( 10.0, 0.0 ),
     vec2( 10.0, 1.0 ),
     vec2( 10.0, 1.0 ),
@@ -208,11 +249,11 @@ var render = function(){
 
     // Teikna vegg með mynstri
     gl.bindTexture( gl.TEXTURE_2D, texVegg );
-    gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+    gl.drawArrays( gl.TRIANGLES, 0, 4*numVertices );
 
     // Teikna gólf með mynstri
     gl.bindTexture( gl.TEXTURE_2D, texGolf );
-    gl.drawArrays( gl.TRIANGLES, numVertices, numVertices );
+    gl.drawArrays( gl.TRIANGLES, 4*numVertices, numVertices );
 
     requestAnimFrame(render);
 }
