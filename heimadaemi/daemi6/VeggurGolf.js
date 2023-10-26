@@ -84,7 +84,14 @@ var vertices = [
     vec4(  5.0,  0.0,  0.0, 1.0 ),
     vec4(  5.0,  0.0,  0.0, 1.0 ),
     vec4( -5.0,  0.0,  0.0, 1.0 ),
-    vec4( -5.0,  0.0, 10.0, 1.0 )
+    vec4( -5.0,  0.0, 10.0, 1.0 ),
+// Hnútar þaksins
+    vec4(-5.0, 1.0, 0.0, 1.0),
+	vec4(5.0, 1.0, 0.0, 1.0),
+	vec4(5.0, 1.0, 10.0, 1.0),
+	vec4(5.0, 1.0, 10.0, 1.0),
+	vec4(-5.0, 1.0, 10.0, 1.0),
+	vec4(-5.0, 1.0, 0.0, 1.0),
 ];
 
 // Mynsturhnit fyrir vegg
@@ -126,7 +133,14 @@ var texCoords = [
     vec2( 10.0, 10.0 ),
     vec2( 10.0, 10.0 ),
     vec2(  0.0, 10.0 ),
-    vec2(  0.0,  0.0 )
+    vec2(  0.0,  0.0 ),
+// Mynsturhnit fyrir himin
+    vec2(  0.0, 0.0 ),
+    vec2( 10.0, 0.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2(  0.0, 1.0 ),
+    vec2(  0.0, 0.0 ),
 ];
 
 
@@ -185,6 +199,17 @@ window.onload = function init() {
     gl.generateMipmap( gl.TEXTURE_2D );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+	
+	// From https://www.flickr.com/photos/webtreatsetc/5584888003
+	var loftImage = document.getElementById("LoftImage");
+	texLoft = gl.createTexture();
+	gl.bindTexture( gl.TEXTURE_2D, texGolf );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, golfImage );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+	
     
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 
@@ -291,6 +316,10 @@ var render = function(){
     // Teikna gólf með mynstri
     gl.bindTexture( gl.TEXTURE_2D, texGolf );
     gl.drawArrays( gl.TRIANGLES, 5*numVertices, numVertices );
+	
+	// Teikna loft með mynstri
+	gl.bindTexture( gl.TEXTURE_2D, texLoft );
+	gl.drawArrays( gl.TRIANGLES, 6*numVertices, numVertices );
 
     requestAnimFrame(render);
 }
