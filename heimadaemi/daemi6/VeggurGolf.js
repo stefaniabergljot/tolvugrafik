@@ -64,13 +64,20 @@ var vertices = [
     vec4( -5.0,  1.0, 10.0, 1.0 ),
     vec4( 5.0,  1.0, 10.0, 1.0 ),
     vec4( 5.0,  0.0, 10.0, 1.0 ),
-// Veggur 4
+// Veggur 4 - fyrri helmingur
     vec4( -5.0,  0.0, 10.0, 1.0 ),
+    vec4( -5.0,  0.0, 6.0, 1.0 ),
+    vec4( -5.0,  1.0, 6.0, 1.0 ),
+    vec4( -5.0,  1.0, 6.0, 1.0 ),
+    vec4( -5.0,  1.0, 10.0, 1.0 ),
+    vec4( -5.0,  0.0, 10.0, 1.0 ),
+// Veggur 4 - seinni helmingur
+    vec4( -5.0,  0.0, 4.0, 1.0 ),
     vec4( -5.0,  0.0, 0.0, 1.0 ),
     vec4( -5.0,  1.0, 0.0, 1.0 ),
     vec4( -5.0,  1.0, 0.0, 1.0 ),
-    vec4( -5.0,  1.0, 10.0, 1.0 ),
-    vec4( -5.0,  0.0, 10.0, 1.0 ),
+    vec4( -5.0,  1.0, 4.0, 1.0 ),
+    vec4( -5.0,  0.0, 4.0, 1.0 ),
 // Hnútar gólfsins (strax á eftir)
     vec4( -5.0,  0.0, 10.0, 1.0 ),
     vec4(  5.0,  0.0, 10.0, 1.0 ),
@@ -89,6 +96,12 @@ var texCoords = [
     vec2(  0.0, 1.0 ),
     vec2(  0.0, 0.0 ),
 	// Endurtökum fyrir hvern vegg
+	vec2(  0.0, 0.0 ),
+    vec2( 10.0, 0.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2( 10.0, 1.0 ),
+    vec2(  0.0, 1.0 ),
+    vec2(  0.0, 0.0 ),
 	vec2(  0.0, 0.0 ),
     vec2( 10.0, 0.0 ),
     vec2( 10.0, 1.0 ),
@@ -205,7 +218,9 @@ window.onload = function init() {
     
     // Event listener for keyboard
      window.addEventListener("keydown", function(e){
-         switch( e.keyCode ) {
+		 var oldX = userXPos;
+		 var oldZ = userZPos;
+		 switch( e.keyCode ) {
             case 87:	// w
                 userXPos += userIncr * userXDir;
                 userZPos += userIncr * userZDir;;
@@ -223,6 +238,19 @@ window.onload = function init() {
                 userZPos += userIncr * userXDir;;
                 break;
          }
+		 if isInside(oldX, oldY) != isInside(userXPos, userZPos) {
+			 // Rollback, unless exited/entered through door
+			 if (oldX > -5 != userXPos > -5) {
+				 // Find the crossover point in the Z axis
+				 var alpha = (-5 - userXPos) / (oldX - userXPos);
+				 var entry = alpha*oldZ + (1-alpha)*userZPos;
+				 if (entry < 4.0 || entry > 6.0) {
+					 userXPos = oldX;
+					 userZPos = oldZ;
+				 }
+			 }
+			 
+		 }
      }  );  
 
     // Event listener for mousewheel
@@ -239,6 +267,10 @@ window.onload = function init() {
  
 }
 
+function isInside(x, z) {
+	return Math.abs(x) < 5.0 && z < 10.0 && z > 0.0;
+}
+
 var render = function(){
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -249,11 +281,11 @@ var render = function(){
 
     // Teikna vegg með mynstri
     gl.bindTexture( gl.TEXTURE_2D, texVegg );
-    gl.drawArrays( gl.TRIANGLES, 0, 4*numVertices );
+    gl.drawArrays( gl.TRIANGLES, 0, 5*numVertices );
 
     // Teikna gólf með mynstri
     gl.bindTexture( gl.TEXTURE_2D, texGolf );
-    gl.drawArrays( gl.TRIANGLES, 4*numVertices, numVertices );
+    gl.drawArrays( gl.TRIANGLES, 5*numVertices, numVertices );
 
     requestAnimFrame(render);
 }
