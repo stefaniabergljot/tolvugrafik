@@ -135,12 +135,12 @@ var texCoords = [
     vec2(  0.0, 10.0 ),
     vec2(  0.0,  0.0 ),
 // Mynsturhnit fyrir himin
-    vec2(  0.0, 0.0 ),
-    vec2( 10.0, 0.0 ),
-    vec2( 10.0, 1.0 ),
-    vec2( 10.0, 1.0 ),
-    vec2(  0.0, 1.0 ),
-    vec2(  0.0, 0.0 ),
+    vec2(  0.0,  0.0 ),
+    vec2( 10.0,  0.0 ),
+    vec2( 10.0, 10.0 ),
+    vec2( 10.0, 10.0 ),
+    vec2(  0.0, 10.0 ),
+    vec2(  0.0,  0.0 ),
 ];
 
 
@@ -203,9 +203,9 @@ window.onload = function init() {
 	// From https://www.flickr.com/photos/webtreatsetc/5584888003
 	var loftImage = document.getElementById("LoftImage");
 	texLoft = gl.createTexture();
-	gl.bindTexture( gl.TEXTURE_2D, texGolf );
+	gl.bindTexture( gl.TEXTURE_2D, texLoft );
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, golfImage );
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, loftImage );
     gl.generateMipmap( gl.TEXTURE_2D );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
