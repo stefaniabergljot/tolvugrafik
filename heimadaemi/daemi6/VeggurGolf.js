@@ -237,20 +237,23 @@ window.onload = function init() {
                 userXPos -= userIncr * userZDir;
                 userZPos += userIncr * userXDir;;
                 break;
-         }
-		 var isOldInside = Math.abs(oldX) < 5.0 && oldZ < 10.0 && oldZ > 0.0;
-		 var isNewInside = Math.abs(userXPos) < 5.0 && userZPos < 10.0 && userZPos > 0.0;
-		 if (isOldInside != isNewInside) {
-			 // Rollback, unless exited/entered through door
-			 if (oldX > -5 != userXPos > -5) {
-				 // Find the crossover point in the Z axis
-				 var alpha = (-5 - userXPos) / (oldX - userXPos);
-				 var entry = alpha*oldZ + (1-alpha)*userZPos;
-				 if (entry < 4.0 || entry > 6.0) {
-					 userXPos = oldX;
-					 userZPos = oldZ;
-				 }
-			 }
+        }
+		var isOldInside = Math.abs(oldX) < 5.0 && oldZ < 10.0 && oldZ > 0.0;
+		var isNewInside = Math.abs(userXPos) < 5.0 && userZPos < 10.0 && userZPos > 0.0;
+		if (isOldInside != isNewInside) {
+			// Rollback, unless exited/entered through door
+			if (oldX > -5 != userXPos > -5) {
+				// Find the crossover point in the Z axis
+				var alpha = (-5 - userXPos) / (oldX - userXPos);
+				var entry = alpha*oldZ + (1-alpha)*userZPos;
+				if (entry < 4.0 || entry > 6.0) {
+					userXPos = oldX;
+					userZPos = oldZ;
+				}
+			} else {
+				userXPos = oldX;
+				userZPos = oldZ;
+			}
 			 
 		 }
      }  );  
