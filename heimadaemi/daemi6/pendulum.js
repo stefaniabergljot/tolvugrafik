@@ -57,8 +57,8 @@ var LowerArm = 1;
 var UpperArm = 0;
 
 var theta = [ 0, 0];
-var thetaInc = [ 0.05, 0.12];
-var maxTheta = [ 20, 40];
+var thetaInc = [ 0.2, 0.31];
+var maxTheta = [ 60, 40];
 
 
 
