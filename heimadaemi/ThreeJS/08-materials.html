@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Ólíkar áferðir</title>
+	</head>
+	<body>
+        <canvas id="c"  width="800" height="800"></canvas>
+		<script src="js/three.js"></script>
+        <script src="js/examples/js/controls/OrbitControls.js"></script>
+		<script>
+            // Ná í striga
+            const canvas = document.querySelector('#c');
+
+            // Skilgreina sviðsnet
+			const scene = new THREE.Scene();
+            scene.background = new THREE.Color( 0xeeeeee );
+            
+            // Skilgreina myndavél og staðsetja hana
+			const camera = new THREE.PerspectiveCamera( 75, canvas.clientWidth/canvas.clientHeight, 0.1, 1000 );
+			camera.position.set(0, 0, 6);
+
+            // Bæta við músarstýringu
+            const controls = new THREE.OrbitControls( camera, canvas );
+
+            // Skilgreina birtingaraðferð með afbjögun (antialias)
+			const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+
+            // Sama rúmfræði í öllum hlutunum
+			const ballGeometry = new THREE.SphereGeometry( 0.8, 24, 20 );
+
+            // Búa til kúlu með grunnáferð (basic material) og bæta í sviðsnetið
+			const BasicMaterial = new THREE.MeshBasicMaterial( { color: 0x44aa88 } );
+			const basic = new THREE.Mesh( ballGeometry, BasicMaterial );
+            basic.position.x -= 3;
+			scene.add( basic );
+
+            // Búa til kúlu með Lambert áferð (Lambert material) og bæta í sviðsnetið
+			const LambertMaterial = new THREE.MeshLambertMaterial( { color: 0x44aa88 } );
+			const Lambert = new THREE.Mesh( ballGeometry, LambertMaterial );
+            Lambert.position.x -= 1;
+			scene.add( Lambert );
+
+            // Búa til kúlu með Phong áferð (Phong material) og bæta í sviðsnetið
+			const PhongMaterial = new THREE.MeshPhongMaterial( { color: 0x44aa88 } );
+			const Phong = new THREE.Mesh( ballGeometry, PhongMaterial );
+            Phong.position.x += 1;
+			scene.add( Phong );
+
+            // Búa til kúlu með grunnáferð (standard material) og bæta í sviðsnetið
+			const standardMaterial = new THREE.MeshStandardMaterial( { color: 0x44aa88 } );
+			const standard = new THREE.Mesh( ballGeometry, standardMaterial );
+            standard.position.x += 3;
+			scene.add( standard );
+
+            
+            // Skilgreina ljósgjafa og bæta honum í sviðsnetið
+            const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+            light.position.set(3, 3, 3);
+            scene.add(light);
+
+            // Hreyfifall
+			const animate = function () {
+				requestAnimationFrame( animate );
+
+                controls.update();
+				renderer.render( scene, camera );
+			};
+
+			animate();
+		</script>
+	</body>
+</html>
