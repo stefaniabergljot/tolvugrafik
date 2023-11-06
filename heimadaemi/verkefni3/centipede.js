@@ -1,6 +1,6 @@
 // Byggt á sýniforriti frá ThreejsFundamentals
 
-var sem = require('semaphore')(capacity);
+//var sem = require('semaphore')(capacity);
 
 // Ná í striga og skilgreina birti
 const canvas = document.querySelector('#c');
@@ -118,9 +118,12 @@ var fieldZ = 16;
 function onField(x, z) {
 	return x >= 0 && z >= 0 && x < fieldX && z < fieldZ;
 }
-
+var sem = semaphore(1);
 window.addEventListener("keydown", function(event) {
-	guy.action(event.code);
+	sem.take(function() {
+		guy.action(event.code);
+	});
+	sem.leave();
 })
 
 function logicToVisual(x, z) {
@@ -139,6 +142,7 @@ class Guy {
 		mesh.position.y = 0.5 * square;
 		this.mesh = mesh;
 		this.updateMesh();
+		var lastShot = Date.now();
 		scene.add(mesh);
 	}
 	action(code) {
@@ -170,9 +174,14 @@ class Guy {
 	}
 	shoot() {
 		// TODO
-		var index = projectiles.length;
-		var projectile = new Projectile(this.x, this.z - 0.5, index);
-		projectiles.push(projectile);
+		if (Date.now() - this.lastShot < 300) {
+			return;
+		}
+		this.lastShot = Date.now();
+		var index = projectiles.size;
+		var id = Math.random().toString();
+		var projectile = new Projectile(this.x, this.z - 0.5, id);
+		projectiles.set(id, projectile);
 	}
 	updateMesh() {
 		var visXZ = logicToVisual(this.x, this.z);
@@ -182,10 +191,11 @@ class Guy {
 }
 
 class Projectile {
-	constructor(x, z, index) {
+	constructor(x, z, id) {
 		this.x = x;
 		this.z = z;
-		this.index = index;
+		this.id = id;
+		this.random = Math.random();
 		var geom = new THREE.SphereGeometry(0.2*square, 12, 12);
 		const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
 		material.color.setHex(0xffa500);
@@ -193,7 +203,7 @@ class Projectile {
 		mesh.rotation.x = Math.PI / 2;
 		mesh.position.y = 0.5 * square;
 		this.mesh = mesh;
-		this.mesh.name = "projectile" + index.toString();
+		this.mesh.name = "projectile" + this.random.toString();
 		this.syncMeshToGameLogic();
 		scene.add(mesh);
 	}
@@ -212,7 +222,7 @@ class Projectile {
 	deleteFromScene() {
 		scene.remove(scene.getObjectByName(this.mesh.name));
 		// TODO delete from the projectile
-		projectiles.splice(this.index, 1);
+		projectiles.delete(this.id);
 	}
 }
 
@@ -224,14 +234,6 @@ class Centipede {
 		this.z = z;
 		this.id = id;
 		this.down = false;
-		// Create objects?
-		//var geom = new THREE.SphereGeometry(0.3*square, 12, 12);
-		//const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
-		//material.color.setHex(0x00ee00);
-		//this.mesh = new THREE.Mesh(geom, material);
-		//this.updateMesh();
-		//this.mesh.position.y = 0.5 * square;
-		//scene.add(this.mesh);
 
 		this.segments = Array(length);
 		this.segments[0] = [x, z];
@@ -244,7 +246,7 @@ class Centipede {
 		}
 		this.meshSegments = Array(this.length);
 		for (var i = 0; i < this.length; i++) {
-			var geom = new THREE.SphereGeometry(0.3*square, 12, 12);
+			var geom = new THREE.SphereGeometry(0.6*square, 12, 12);
 			const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
 			material.color.setHex(0x00ee00);
 			this.meshSegments[i] = new THREE.Mesh(geom, material);
@@ -346,7 +348,7 @@ const mushrooms = new Mushrooms();
 const centipede = new Centipede(6, 'W', 7, 0, 1);
 const cpPace = 100;
 var cpCounter = 0;
-var projectiles = [];
+var projectiles = new Map();
 
 // Hreyfifall
 const animate = function ( time ) {
@@ -366,8 +368,11 @@ const animate = function ( time ) {
 	} else {
 		cpCounter += 1;
 	}
-	for (var i = 0; i < projectiles.length; i++) {
-		projectiles[i].move();
+	/*for (var key in projectiles) {
+		projectiles.get(key).move();
+	}*/
+	for (var projectile of projectiles.values()) {
+		projectile.move();
 	}
 	controls.update();
 	renderer.render( scene, camera );
