@@ -1,179 +1,137 @@
 // Byggt á sýniforriti frá ThreejsFundamentals
 
-//var sem = require('semaphore')(capacity);
-
-// Ná í striga og skilgreina birti
+// Create canvas, light and cameras
 const canvas = document.querySelector('#c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
 
-// Skilgreina myndavél og staðsetja hana
 const camera = new THREE.PerspectiveCamera( 60, canvas.clientWidth/canvas.clientHeight, 0.1, 1000 );
-//camera.position.set(0, 0, 100);
-camera.position.set(0, 40, 75);
-
-// Bæta við músarstýringu
-const controls = new THREE.OrbitControls( camera, canvas );
-
-// Skilgreina sviðsnetið
+resetCamera();
 const scene = new THREE.Scene();
 scene.background = new THREE.Color( 0xAAAAAA );
 
-// Tveir ljósgjafar...
-// Eitt ljós uppi til vinstri fyrir framan
 const light1 = new THREE.DirectionalLight(0xFFFFFF, 1);
 light1.position.set(-1, 2, 4);
 scene.add(light1);
-// Annað ljós niðri til hægri fyrir aftan
 const light2 = new THREE.DirectionalLight(0xFFFFFF, 1);
 light2.position.set(1, -2, -4);
 scene.add(light2);
 
-// Nokkur hjálpaföll...
-const objects = [];         // Allir hlutirnir
-
-// Bæta hlut obj í sviðsnetið í hnitum (x, y) og setja í fylki
-function addObject(x, y, z, obj) {
-	obj.position.x = x;
-	obj.position.y = y;
-	obj.position.z = z;
-
-	scene.add(obj);
-	objects.push(obj);
-	return obj;
-}
-
-// Skilar Phong áferð með slembnum lit
-function createMaterial() {
-	const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
-	material.color.setHSL(Math.random(), 1, 0.5);
-	return material;
-}
-
-// Bætir hlut af gerð geometry í sviðsnetið
-function addSolidGeometry(x, y, z, geometry) {
-	const mesh = new THREE.Mesh(geometry, createMaterial());
-	addObject(x, y, z, mesh);
-	return mesh;
-}
-
-function addSolidGeometry(x, y, z, geometry, color) {
-	const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
-	material.color.setHex(color);
-	const mesh = new THREE.Mesh(geometry, material);
-	mesh.rotation.x = Math.PI / 2;
-	addObject(x, y, z, mesh);
-	return mesh;
-}
-
-// Hlutirnir...
-
-/*
-// Fjórflötungur  (radius)
-addSolidGeometry(-2, 2, new THREE.TetrahedronGeometry(7));
-
-// Teningur (sexflötungur) (width, height, depth)
-addSolidGeometry(-1, 2, new THREE.BoxGeometry(8, 8, 8));
-
-// Áttflötungur  (radius)
-addSolidGeometry(0, 2, new THREE.OctahedronGeometry(7));
-
-// Tólfflötungur  (radius)
-addSolidGeometry(1, 2, new THREE.DodecahedronGeometry(7));
-
-// Tuttuguflötungur (radius)
-addSolidGeometry(2, 2, new THREE.IcosahedronGeometry(7));
-
-
-// Kúla  (radius, widthSegments, heightSegments)
-addSolidGeometry(-1, 1, new THREE.SphereGeometry(7, 12, 12));
-
-// Sívalningur  (radiusTop, radiusBottom, height, radialSegments)
-addSolidGeometry(0, 1, new THREE.CylinderGeometry(4, 4, 8, 12));
-
-// Keila  (radius, height, segments)
-addSolidGeometry(1, 1, new THREE.ConeGeometry(6, 8, 16));
-
-
-// Slétta  (width, height, widthSegments, heightSegments)
-addSolidGeometry(-1, 0, new THREE.PlaneGeometry(9, 9, 2, 2));
-
-// Skífa  (radius, segments)
-addSolidGeometry(0, 0, new THREE.CircleGeometry(7, 24));
-
-// Skífa með gati  (innerRadius, outerRadius, segments)
-addSolidGeometry(1, 0, new THREE.RingGeometry(2, 7, 18));
-
-
-// Kleinuhringur  (radius, tubeRadius, radialSegments, tubularSegments)
-addSolidGeometry(-1, -1, new THREE.TorusGeometry(5, 2, 8, 24));
-
-// Kleinuhringshnútur  (radius, tube, tubularSegments, radialSegments, p, q)
-addSolidGeometry(1, -1, new THREE.TorusKnotGeometry(3.5, 1.5, 64, 8, 2, 3));
-*/
-
+// Representing the size of the playing field
 var square = 4;
 var fieldX = 15;
 var fieldZ = 16;
+
+// For enabling and disabling pov camera
+var povCamera = false;
+var povCameraOffset = [0, 1, 0];
+
+var active = true;
+var gameOver = false;
+var score = 0;
+
+function resetCamera() {
+	camera.rotation.x = -0.7;
+	camera.rotation.y = 0.0;
+	camera.rotation.z = 0.0;
+	camera.position.set(0, 40, 60);
+}
 
 function onField(x, z) {
 	return x >= 0 && z >= 0 && x < fieldX && z < fieldZ;
 }
 var sem = semaphore(1);
 window.addEventListener("keydown", function(event) {
-	sem.take(function() {
-		guy.action(event.code);
+	if (event.code === "KeyC") {
+		if (povCamera) {
+			povCamera = false;
+			resetCamera();
+			gnome.mesh.visible=true;
+			gnome.hatMesh.visible=true;
+		} else {
+			povCamera = true;
+			camera.position.set(gnome.mesh.position.x + povCameraOffset[0], gnome.mesh.position.y + povCameraOffset[1], gnome.mesh.position.z + povCameraOffset[2]);
+			camera.rotation.x = 0.0;
+			camera.rotation.y = 0.0;
+			camera.rotation.z = 0.0;
+			gnome.mesh.visible=false;
+			gnome.hatMesh.visible=false;
+		}
+	} else if (event.code === "Digit0") {
+		resetGame();
+	} else if (event.code === "KeyP") {
+		active = !active;
+	} else if (active) {
+		// actions associated with the gnome
+		sem.take(function() {
+		gnome.action(event.code);
 	});
 	sem.leave();
+	}
 })
 
+// Maps the logical coordinates to visual coordinates
 function logicToVisual(x, z) {
 	return [(x-7)*square, (z-8)*square];
 }
 
-class Guy {
-	constructor(x, z, color) {
+class Gnome {
+	constructor(x, z) {
+		// The gnome has an x and y coordinates
+		// It's visually represented by a sphere and a cone
 		this.x = x;
 		this.z = z;
 		var geom = new THREE.SphereGeometry(0.4*square, 12, 12);
 		const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
-		material.color.setHex(color);
+		material.color.setHex(0xe9dcca);
+		
+		var hatGeom = new THREE.ConeGeometry(2, 2, 32, 1);
+		const hatMaterial = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
+		hatMaterial.color.setHex(0xff0000);
+		this.hatMesh = new THREE.Mesh(hatGeom, hatMaterial);
+		this.hatMesh.position.y = 1.0 * square;
+		this.hatMesh.name="GnomeHat";
+		
 		const mesh = new THREE.Mesh(geom, material);
 		mesh.rotation.x = Math.PI / 2;
 		mesh.position.y = 0.5 * square;
+		mesh.name="Gnome";
 		this.mesh = mesh;
 		this.updateMesh();
 		var lastShot = Date.now();
 		scene.add(mesh);
+		scene.add(this.hatMesh);
 	}
 	action(code) {
 		if (event.code === "ArrowUp" || event.code === "KeyW") {
 			this.move(0, -1);
-		//guy.position.z -= 1 * square;
 		} else if (event.code === "ArrowDown" || event.code === "KeyS") {
 			this.move(0, 1);
-			//guy.position.z += 1 * square;
 		} else if (event.code === "ArrowRight" || event.code === "KeyD") {
 			this.move(1, 0);
-			//guy.position.x += 1 * square;
 		} else if (event.code === "ArrowLeft" || event.code === "KeyA") {
 			this.move(-1, 0);
-			//guy.position.x -= 1 * square;
 		} else if(event.code === "Space") {
 			this.shoot();
 		}
 	}
 	move(xDelta, zDelta) {
 		var newX = this.x + xDelta;
-		var newZ = this.z + zDelta;
+		var newZ = Math.max(this.z + zDelta, 11);
 		if (!onField(newX, newZ) || mushrooms.isIn(newX, newZ)) {
 			return;
 		}
 		this.x = newX;
 		this.z = newZ;
 		this.updateMesh();
+		if (povCamera) {
+			camera.position.set(this.mesh.position.x + povCameraOffset[0], this.mesh.position.y + povCameraOffset[1], this.mesh.position.z + povCameraOffset[2]);
+		}
+	}
+	isIn(x,z) {
+		return this.x == x && this.z == z;
 	}
 	shoot() {
-		// TODO
+		// Limit firing rate
 		if (Date.now() - this.lastShot < 300) {
 			return;
 		}
@@ -187,6 +145,11 @@ class Guy {
 		var visXZ = logicToVisual(this.x, this.z);
 		this.mesh.position.x = visXZ[0];
 		this.mesh.position.z = visXZ[1];
+		this.hatMesh.position.x = visXZ[0];
+		this.hatMesh.position.z = visXZ[1];
+	}
+	hit() { 
+		endGame();
 	}
 }
 
@@ -210,9 +173,8 @@ class Projectile {
 		scene.add(mesh);
 	}
 	move() {
-		this.z -= 0.02;
+		this.z -= projectileSpeed;
 		if (!onField(this.x, this.z)) {
-			// Need to also delete this object?
 			this.deleteFromScene();
 		}
 		this.syncMeshToGameLogic();
@@ -225,7 +187,6 @@ class Projectile {
 	}
 	deleteFromScene() {
 		scene.remove(scene.getObjectByName(this.mesh.name));
-		// TODO delete from the projectile
 		projectiles.delete(this.id);
 	}
 }
@@ -234,11 +195,12 @@ class Centipede {
 	constructor(length, direction, x, z, id) {
 		this.length = length;
 		this.direction = direction;
+		this.secondaryDirection = "S";
 		this.x = x;
 		this.z = z;
 		this.id = id;
 		this.down = false;
-
+		
 		this.segments = Array(length);
 		this.segments[0] = [x, z];
 		for (var i = 1; i < length; i++) {
@@ -269,6 +231,19 @@ class Centipede {
 			
 			this.bounds.push(new THREE.Sphere(this.meshSegments[i].position, radius));
 		}
+		this.eyeGeom = new THREE.SphereGeometry(0.2*square, 6, 6);
+		this.eyeMaterial = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
+		this.eyeMaterial.color.setHex(0xff0000);
+		this.eyeMesh1 = new THREE.Mesh(this.eyeGeom, this.eyeMaterial);
+		this.eyeMesh2 = new THREE.Mesh(this.eyeGeom, this.eyeMaterial);
+		this.eyeMesh1.name = "Centipede" + this.id + "-eye1";
+		this.eyeMesh2.name = "Centipede" + this.id + "-eye2";
+		this.eyeMesh1.position.x = this.meshSegments[0].position.x;
+		this.eyeMesh1.position.z = this.meshSegments[0].position.z;
+		this.eyeMesh1.position.y = 1.5+this.meshSegments[0].position.y;
+		this.eyeMesh2.position.y = 1.5+this.meshSegments[0].position.y;
+		scene.add(this.eyeMesh1);
+		scene.add(this.eyeMesh2);
 	}
 	syncMeshToGameLogic() {
 		for (var i = 0; i < this.length; i++) {
@@ -277,24 +252,57 @@ class Centipede {
 			this.meshSegments[i].position.z = visXZ[1];
 			this.bounds[i].center = this.meshSegments[i].position;
 		}
+		// Head and later segments have different colors
 		this.meshSegments[0].material.color.setHex(0xffa500);
 		if (this.length > 1) {
 			this.meshSegments[1].material.color.setHex(0x00ee00);
+		}
+		// Orient the eyes according to the direction
+		if (this.down && this.secondaryDirection == "S") {
+			this.eyeMesh1.position.x = this.meshSegments[0].position.x + 0.7;
+			this.eyeMesh1.position.z = this.meshSegments[0].position.z + 0.7;
+			this.eyeMesh2.position.x = this.meshSegments[0].position.x - 0.7;
+			this.eyeMesh2.position.z = this.meshSegments[0].position.z + 0.7;
+		} else if (this.down) {
+			this.eyeMesh1.position.x = this.meshSegments[0].position.x + 0.7;
+			this.eyeMesh1.position.z = this.meshSegments[0].position.z - 0.7;
+			this.eyeMesh2.position.x = this.meshSegments[0].position.x - 0.7;
+			this.eyeMesh2.position.z = this.meshSegments[0].position.z - 0.7;
+		} else if (this.direction == "E") {
+			this.eyeMesh1.position.x = this.meshSegments[0].position.x + 0.7;
+			this.eyeMesh1.position.z = this.meshSegments[0].position.z + 0.9;
+			this.eyeMesh2.position.x = this.meshSegments[0].position.x + 0.7;
+			this.eyeMesh2.position.z = this.meshSegments[0].position.z - 0.9;
+		} else {
+			this.eyeMesh1.position.x = this.meshSegments[0].position.x - 0.7;
+			this.eyeMesh1.position.z = this.meshSegments[0].position.z + 0.9;
+			this.eyeMesh2.position.x = this.meshSegments[0].position.x - 0.7;
+			this.eyeMesh2.position.z = this.meshSegments[0].position.z - 0.9;
 		}
 	}
 	move(retry) {
 		var newX;
 		var newZ;
 		if (this.down) {
+			var vertInc = 1;
+			if (this.secondaryDirection == "N") {
+				vertInc = -1;
+			}
 			newX = this.segments[0][0];
-			newZ = this.segments[0][1]+1;
-			this.down = false;
-			/*if (this.direction === 'W') {
-				this.direction = 'E';
+			newZ = this.segments[0][1]+vertInc;
+			
+			// check if down movement will fail
+			var dstObject = atLocation(newX, newZ);
+			if (onField(newX, newZ) && !(dstObject === GameObject.Mushroom || dstObject === GameObject.Centipede)) {
+				this.down = false;
+				this.invertDirection();
 			} else {
-				this.direction = 'W';
-			}*/
-			this.invertDirection();
+				if (retry) {
+					this.down = false;
+					this.move(false);
+					return;
+				}
+			}
 		} else if(this.direction === 'W') {
 			newX = this.segments[0][0]-1;
 			newZ = this.segments[0][1];
@@ -302,20 +310,31 @@ class Centipede {
 			newX = this.segments[0][0]+1;
 			newZ = this.segments[0][1];
 		}
-		if (onField(newX, newZ) && !mushrooms.isIn(newX, newZ)) {
+		var dstObject = atLocation(newX, newZ);
+		if (onField(newX, newZ) && !(dstObject === GameObject.Mushroom || dstObject === GameObject.Centipede)) {
 			this.segments.pop();
 			this.segments.unshift([newX, newZ]);
 		} else {
 			this.down = true;
 			if (retry) {
 				this.move(false);
+				return;
 			}
+		}
+		if (newZ < 0) {
+			this.secondaryDirection = "S";
+		} else if (newZ == 15 && (newX == 15 || newX == -1)) {
+			this.secondaryDirection = "N";
 		}
 		this.syncMeshToGameLogic();
 	}
 	hit(i) {
-		// TODO implement centipede hit
-		// i is the segment that was hit
+		// Segment i is hit
+		if (i == 0) {
+			score += 100;
+		} else {
+			score += 10;
+		}
 		mushrooms.create(this.segments[i][0], this.segments[i][1]);
 		if (i == 0 && this.length == 1) {
 			return [null, null];
@@ -332,6 +351,14 @@ class Centipede {
 			return [c1, c2];
 		}
 	}
+	isIn(x, z) {
+		for (var i = 0; i < this.segments.length; i++) {
+			if (this.segments[i][0] == x && this.segments[i][1] == z) {
+				return true;
+			}
+		}
+		return false;
+	}
 	inverseDirection(dir) {
 		if (dir === 'W') {
 			return 'E';
@@ -346,7 +373,31 @@ class Centipede {
 		for (var i = 0; i < this.meshSegments.length; i++) {
 			scene.remove(scene.getObjectByName(this.meshSegments[i].name));
 		}
+		scene.remove(scene.getObjectByName(this.eyeMesh1.name));
+		scene.remove(scene.getObjectByName(this.eyeMesh2.name));
 	}
+}
+
+const GameObject = {
+	Mushroom: 'Mushroom',
+	Centipede: 'Centipede',
+	Gnome: 'Gnome',
+	Empty: 'Empty'
+};
+
+function atLocation(x, z) {
+	if (mushrooms.isIn(x,z)) {
+		return GameObject.Mushroom;
+	}
+	if (gnome.isIn(x,z)) {
+		return GameObject.Gnome;
+	}
+	for (var i = 0; i < centipedes.length; i++) {
+		if (centipedes[i].isIn(x,z)) {
+			return GameObject.Centipede
+		}
+	}
+	return GameObject.Empty;
 }
 
 class Mushrooms {
@@ -355,11 +406,26 @@ class Mushrooms {
 		this.list = [];
 		this.meshes = [];
 		this.bounds = [];
-		this.color = 0xcccccc;
+		this.bodyColor = 0xcccccc;
+		this.headColor = 0x795c32;
 		this.radius = 0.3*square;
-		this.mushGeom = new THREE.SphereGeometry(this.radius, 12, 12);;
+		this.mushGeom = new THREE.SphereGeometry(this.radius, 12, 12, 0, Math.PI*2, 0, Math.PI*2);
+		// Different head geometries represent mushroom having been shot
+		this.headGeom = new THREE.ConeGeometry(this.radius*1.5, this.radius/1.0, 32, 1, false, 0, Math.PI*2);
+		this.headGeom3 = new THREE.ConeGeometry(this.radius*1.5, this.radius/1.0, 32, 1, false, Math.PI*2*0.1, Math.PI*2*0.8);
+		this.headGeom2 = new THREE.ConeGeometry(this.radius*1.5, this.radius/1.0, 32, 1, false, Math.PI*2*0.2, Math.PI*2*0.6);
+		this.headGeom1 = new THREE.ConeGeometry(this.radius*1.5, this.radius/1.0, 32, 1, false, Math.PI*2*0.3, Math.PI*2*0.4);
 		this.material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
-		this.material.color.setHex(this.color);
+		this.material.color.setHex(this.bodyColor);
+		// Different head materials for color variety
+		this.headMaterials = [new THREE.MeshPhongMaterial({side: THREE.DoubleSide}), 
+			new THREE.MeshPhongMaterial({side: THREE.DoubleSide}), 
+			new THREE.MeshPhongMaterial({side: THREE.DoubleSide}), 
+			new THREE.MeshPhongMaterial({side: THREE.DoubleSide})];
+		this.headMaterials[0].color.setHex(0xae6838);
+		this.headMaterials[1].color.setHex(0xa67b5b);
+		this.headMaterials[2].color.setHex(0xd2b48c);
+		this.headMaterials[3].color.setHex(0xab7e4e);
 		
 		for(var i = 0; i < 15; i++) {
 			this.map[i] = Array(16);
@@ -368,32 +434,17 @@ class Mushrooms {
 			}
 		}
 		for (var j = 1; j < 15; j++) {
-			var randomX = Math.floor(Math.random()*15);
-			if (j == 15 && randomX == 7) {
-				randomX = 8;
+			var randomX;
+			if (j > 12) {
+				// Try to avoid lower corners so centipede doesn't get trapped. 
+				// Doesn't completely prevent it though
+				randomX = 2 + Math.floor(Math.random()*11);
+			} else {
+				randomX = Math.floor(Math.random()*15);
 			}
+			this.create(randomX, j);
 			this.map[randomX][j] = 4.0;
 		}
-		
-		for (var i = 0; i < 15; i++) {
-			for (var j = 0; j < 16; j++) {
-				if (this.map[i][j] > 0.0) {
-					const mesh = new THREE.Mesh(this.mushGeom, this.material);
-					mesh.rotation.x = Math.PI / 2;
-					mesh.position.y = 0.5 * square;
-					var visXY = logicToVisual(i, j);
-					mesh.position.x = visXY[0];
-					mesh.position.z = visXY[1];
-					scene.add(mesh);
-					this.meshes.push(mesh);
-					
-					var bound = new THREE.Sphere(mesh.position, this.radius);
-					this.bounds.push(bound);
-					this.list.push([i, j]);
-				}
-			}
-		}
-
 	}
 	create(x, z) {
 		// Logical x and z coordinates
@@ -401,13 +452,25 @@ class Mushrooms {
 		this.map[x][z] = 4.0;
 		this.list.push([x, z]);
 		const mesh = new THREE.Mesh(this.mushGeom, this.material);
+		//mesh.material.color.setHex(
 		mesh.rotation.x = Math.PI / 2;
 		mesh.position.y = 0.5 * square;
 		var visXY = logicToVisual(x, z);
 		mesh.position.x = visXY[0];
 		mesh.position.z = visXY[1];
+		mesh.renderOrder = 1;
+		mesh.name = "MushroomBody-" + this.list.length.toString();
+		
+		const headMesh = new THREE.Mesh(this.headGeom, this.headMaterials[Math.floor(Math.random()*4.0)]);
+		headMesh.position.y = 0.5 * square + 1.4;
+		headMesh.position.x = visXY[0];
+		headMesh.position.z = visXY[1];
+		headMesh.renderOrder = 0;
+		headMesh.name = "MushroomHead-" + this.list.length.toString();
+		
 		scene.add(mesh);
-		this.meshes.push(mesh);
+		scene.add(headMesh);
+		this.meshes.push([mesh, headMesh]);
 		
 		var bound = new THREE.Sphere(mesh.position, this.radius);
 		this.bounds.push(bound);
@@ -420,23 +483,58 @@ class Mushrooms {
 		return this.map[x][z] > 0.0
 	}
 	hit(i) {
+		score += 1;
 		// Mushroom i has been hit
 		var x = this.list[i][0];
 		var z = this.list[i][1];
 		if (this.map[x][z] > 0.0) {
 			this.map[x][z] -= 1;
 		}
-		var size = 0.3*square*this.map[x][z] / 4.0
-		this.meshes[i].scale.x = size;
-		this.meshes[i].scale.z = size
-		this.meshes[i].scale.y = size
+		if (this.map[x][z] == 0.0) {
+			// delete mushroom from lists, bounds and scene
+			scene.remove(scene.getObjectByName(this.meshes[i][0].name));
+			scene.remove(scene.getObjectByName(this.meshes[i][1].name));
+			this.list.splice(i, 1);
+			this.bounds.splice(i, 1);
+			this.meshes.splice(i, 1);
+		} else {
+			if (this.map[x][z] == 3.0) {
+				this.meshes[i][1].geometry = this.headGeom3;
+			} else if (this.map[x][z] == 2.0) {
+				this.meshes[i][1].geometry = this.headGeom2;
+			} else {
+				this.meshes[i][1].geometry = this.headGeom1;
+			} 
+		}
+	}	
+}
+
+function endGame() {
+	active = false;
+	gameOver = true;
+	document.getElementById("scoreboard").innerHTML = "Game over! Score: " + score + ". Press 0 to restart";
+}
+
+function resetGame() {
+	score = 0;
+	var children = scene.children;
+	for( var i = scene.children.length - 1; i >= 0; i--) { 
+		obj = scene.children[i];
+		scene.remove(obj); 
 	}
+	scene.add(light1);
+	scene.add(light2);
 	
+	createPlane();
+	gnome = new Gnome(7, 15);
+	mushrooms = new Mushrooms();
+	centipedes = [];
+	centipedes.push(new Centipede(6, 'W', 7, 0, 1));
+	projectiles = new Map();
 }
 
 function checkProjectileColisions() {
 	var keysForDeletion = [];
-	// Check for mushroom collisions
 	for (var key of projectiles.keys()) {
 		var projectile = projectiles.get(key);
 		for (var i = 0; i < mushrooms.bounds.length; i++) {
@@ -447,11 +545,9 @@ function checkProjectileColisions() {
 				if (value > 0.0) {
 					mushrooms.hit(i);
 					keysForDeletion.push(key);
-				// TODO reduce the mushroom
 				}
 			}
 		}
-		//projectile.bound.intersectsSphere();
 	}
 	// Check for centipede collisions
 	for (var key of projectiles.keys()) {
@@ -479,53 +575,82 @@ function checkProjectileColisions() {
 	for (var i = 0; i < keysForDeletion.length; i++) {
 		projectiles.get(keysForDeletion[i]).deleteFromScene();
 		projectiles.delete(keysForDeletion[i]);
-		// also do cleanup?
 	}
 }
 
-addSolidGeometry(0, 0, -0.5*square, new THREE.PlaneGeometry(15*square, 16*square, 2, 2), 0x11aa44);
-const axes = new THREE.AxesHelper( 15 );
-scene.add(axes);
-const guy = new Guy(7, 15, 0xaa1111);
-const mushrooms = new Mushrooms();
+function checkForCentipedeGnomeCollision() {
+	for (var i = 0 ; i < centipedes.length; i++) {
+		var centipede = centipedes[i];
+		for (var j = 0; j < centipede.segments.length; j++) {
+			if (centipede.segments[j][0] == gnome.x && centipede.segments[j][1] == gnome.z) {
+				gnome.hit()
+			}
+		}
+	}
+}
+
+function createPlane() {
+	var x = 0;
+	var y = 0;
+	var z = -0.5*square;
+	var geometry = new THREE.PlaneGeometry(15*square, 16*square, 2, 2);
+	const material = new THREE.MeshPhongMaterial({side: THREE.DoubleSide});
+	material.color.setHex(0x11aa44);
+	const mesh = new THREE.Mesh(geometry, material);
+	mesh.rotation.x = Math.PI / 2;
+	mesh.position.x = x;
+	mesh.position.y = y;
+	mesh.position.z = z;
+
+	scene.add(mesh);
+	return mesh;
+}
+
+createPlane();
+var gnome = new Gnome(7, 15);
+var mushrooms = new Mushrooms();
 var centipedes = [];
 centipedes.push(new Centipede(6, 'W', 7, 0, 1));
-const cpPace = 100;
+const cpPace = 50;
 var cpCounter = 0;
+const projectileSpeed = 0.04;
 var projectiles = new Map();
 
-// Hreyfifall
+// Game loop and animation
 const animate = function ( time ) {
 	time *= 0.001;
-
-	/*objects.forEach((obj, ndx) => {
-		const speed = 0.1 + ndx*0.05;
-		const rot = time*speed;
-		obj.rotation.x = rot;
-		obj.rotation.y = rot;
-	});*/
-	
 	requestAnimationFrame( animate );
 	
 	checkProjectileColisions();
+	checkForCentipedeGnomeCollision();
 	
-	
-	if (cpCounter == cpPace) {
-		for (var i = 0; i < centipedes.length; i++) {
-			centipedes[i].move(true);
+	if (active) {
+		if (cpCounter == cpPace) {
+			for (var i = 0; i < centipedes.length; i++) {
+				centipedes[i].move(true);
+			}
+			cpCounter = 0;
+		} else {
+			cpCounter += 1;
 		}
-		cpCounter = 0;
-	} else {
-		cpCounter += 1;
+		if (cpCounter == cpPace / 2) {
+			for (var i = 0; i < centipedes.length; i++) {
+				if (centipedes[i].length == 1) {
+					centipedes[i].move(true);
+				}
+			}
+		}
+		for (var projectile of projectiles.values()) {
+			projectile.move();
+		}	
 	}
-	/*for (var key in projectiles) {
-		projectiles.get(key).move();
-	}*/
-	for (var projectile of projectiles.values()) {
-		projectile.move();
+	if (centipedes.length == 0) {
+		centipedes.push(new Centipede(6, 'W', 7, 0, 1));
 	}
-	
-	controls.update();
+	if (!gameOver) {
+		document.getElementById("scoreboard").innerHTML = "Score: " + score;
+	}
+	document.getElementById("rules").innerHTML = "Controls: WASD or arrows to move and spacebar to shoot. 'c' to change camera, 'p' to pause and '0' to reset game."
 	renderer.render( scene, camera );
 };
 
